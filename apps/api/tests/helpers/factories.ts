@@ -1,8 +1,8 @@
 import path from 'node:path'
 import bcrypt from 'bcrypt'
-import type { Role } from '@canteen/shared'
+import type { ProductStatus, Role } from '@canteen/shared'
 import { db } from '../../src/db/client'
-import { shops, users } from '../../src/db/schema'
+import { products, shops, users } from '../../src/db/schema'
 import { api } from './app'
 
 const DEFAULT_PASSWORD = 'Password123'
@@ -50,4 +50,21 @@ export async function createMerchantWithShop(
     description: 'Shop description',
   })
   return { user, token: await loginAs(user), shop: { id: result.insertId } }
+}
+
+/** Inserts a product straight into the DB; defaults to an available product priced 50. */
+export async function createProduct(
+  shopId: number,
+  overrides: Partial<{ name: string; price: number; status: ProductStatus }> = {},
+): Promise<{ id: number; price: number }> {
+  sequence += 1
+  const price = overrides.price ?? 50
+  const [result] = await db.insert(products).values({
+    shopId,
+    name: overrides.name ?? `Product ${String(sequence)}`,
+    description: 'Product description',
+    price,
+    status: overrides.status ?? 'available',
+  })
+  return { id: result.insertId, price }
 }
