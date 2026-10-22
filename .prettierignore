@@ -1,0 +1,9 @@
+myfrontend/
+docs/
+.superpowers/
+README.md
+.backups/
+pnpm-lock.yaml
+apps/api/src/db/migrations/
+apps/api/seed/
+apps/api/uploads/
