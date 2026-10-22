@@ -1,0 +1,143 @@
+import type { Cart, CartItem, ProductStatus, ReplaceCartItemsInput } from '@canteen/shared'
+import { NotFoundError, ValidationError } from '../../common/errors'
+import { withTransaction, type DbClient, type Tx } from '../../db/client'
+import { findProductsForCart } from '../products/products.service'
+import { toCart, toCartItem } from './cart.mapper'
+import * as repo from './cart.repository'
+
+const ITEM_NOT_FOUND = 'Cart item not found'
+
+export type CheckoutCart = {
+  id: number
+  shopId: number
+  items: { productId: number; quantity: number; price: number; status: ProductStatus }[]
+}
+
+export async function listCarts(userId: number, shopId?: number): Promise<Cart[]> {
+  const cartRows = await repo.findCartsByUser(userId, shopId)
+  const itemRows = await repo.findItemsByCartIds(cartRows.map((cart) => cart.id))
+  return cartRows.map((cart) =>
+    toCart(
+      cart,
+      itemRows.filter((item) => item.cartId === cart.id),
+    ),
+  )
+}
+
+/**
+ * Replaces everything the user has in the cart of `shopId`.
+ * Returns the new cart, or `null` when `items` is empty (the cart is deleted).
+ */
+export async function replaceCartItems(
+  userId: number,
+  shopId: number,
+  items: ReplaceCartItemsInput['items'],
+): Promise<Cart | null> {
+  if (items.length === 0) {
+    await repo.deleteCartByUserAndShop(userId, shopId)
+    return null
+  }
+
+  return withTransaction(async (tx) => {
+    await assertAllAvailable(shopId, items, tx)
+    // The upsert takes the cart's row lock, serialising concurrent replacements of one cart.
+    const cartId = await repo.upsertCart(userId, shopId, tx)
+    await repo.deleteItemsByCartId(cartId, tx)
+    await repo.insertItems(cartId, items, tx)
+    return loadCart(cartId, tx)
+  })
+}
+
+export async function updateCartItem(
+  userId: number,
+  itemId: number,
+  quantity: number,
+): Promise<CartItem> {
+  const owned = await repo.findOwnedItem(userId, itemId)
+  if (!owned) throw new NotFoundError(ITEM_NOT_FOUND)
+  await repo.updateItemQuantity(owned.id, quantity)
+  const row = await repo.findItemWithProductById(owned.id)
+  if (!row) throw new NotFoundError(ITEM_NOT_FOUND)
+  return toCartItem(row)
+}
+
+/** Removes one item; the cart goes with its last item. */
+export async function removeCartItem(userId: number, itemId: number): Promise<void> {
+  await withTransaction(async (tx) => {
+    const owned = await repo.findOwnedItem(userId, itemId, tx)
+    if (!owned) throw new NotFoundError(ITEM_NOT_FOUND)
+    // Lock the cart so two concurrent deletions cannot both see a non-empty cart.
+    if (!(await repo.lockOwnedCart(userId, owned.cartId, tx)))
+      throw new NotFoundError(ITEM_NOT_FOUND)
+    await repo.deleteItem(owned.id, tx)
+    if ((await repo.countItems(owned.cartId, tx)) === 0) await repo.deleteCart(owned.cartId, tx)
+  })
+}
+
+/**
+ * For checkout: the user's cart with each item's current price and product status.
+ * Locks the cart and its items (`FOR UPDATE`) until the caller's transaction ends.
+ * Returns `null` when the cart does not exist or belongs to someone else.
+ */
+export async function findOwnedCartForCheckout(
+  userId: number,
+  cartId: number,
+  tx: Tx,
+): Promise<CheckoutCart | null> {
+  const cart = await repo.lockOwnedCart(userId, cartId, tx)
+  if (!cart) return null
+  const itemRows = await repo.lockItemsByCartId(cart.id, tx)
+  const productRows = await findProductsForCart(
+    cart.shopId,
+    itemRows.map((item) => item.productId),
+    tx,
+  )
+  const productsById = new Map(productRows.map((product) => [product.id, product]))
+  return {
+    id: cart.id,
+    shopId: cart.shopId,
+    items: itemRows.flatMap((item) => {
+      const product = productsById.get(item.productId)
+      return product
+        ? [
+            {
+              productId: item.productId,
+              quantity: item.quantity,
+              price: product.price,
+              status: product.status,
+            },
+          ]
+        : []
+    }),
+  }
+}
+
+/** Deletes the cart together with its items. */
+export async function deleteCart(cartId: number, tx: Tx): Promise<void> {
+  await repo.deleteCart(cartId, tx)
+}
+
+/** Every product must belong to the shop and be `available`. */
+async function assertAllAvailable(
+  shopId: number,
+  items: ReplaceCartItemsInput['items'],
+  tx: DbClient,
+): Promise<void> {
+  const found = await findProductsForCart(
+    shopId,
+    items.map((item) => item.productId),
+    tx,
+  )
+  const ok = found.length === items.length && found.every((p) => p.status === 'available')
+  if (!ok) {
+    throw new ValidationError('Invalid request', [
+      { path: 'items', message: 'All products must belong to this shop and be available' },
+    ])
+  }
+}
+
+async function loadCart(cartId: number, tx: DbClient): Promise<Cart> {
+  const cart = await repo.findCartWithShopById(cartId, tx)
+  if (!cart) throw new Error('Cart disappeared right after being saved')
+  return toCart(cart, await repo.findItemsByCartIds([cartId], tx))
+}

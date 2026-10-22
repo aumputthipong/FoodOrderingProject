@@ -1,9 +1,9 @@
 import path from 'node:path'
 import bcrypt from 'bcrypt'
-import type { ProductStatus, Role } from '@canteen/shared'
+import type { Cart, ProductStatus, Role } from '@canteen/shared'
 import { db } from '../../src/db/client'
 import { products, shops, users } from '../../src/db/schema'
-import { api } from './app'
+import { api, auth } from './app'
 
 const DEFAULT_PASSWORD = 'Password123'
 let sequence = 0
@@ -67,4 +67,18 @@ export async function createProduct(
     status: overrides.status ?? 'available',
   })
   return { id: result.insertId, price }
+}
+
+/** Replaces the user's cart for `shopId` through the real endpoint and returns the resulting cart. */
+export async function addToCart(
+  token: string,
+  shopId: number,
+  items: { productId: number; quantity: number }[],
+): Promise<Cart> {
+  const res = await api()
+    .put(`/api/cart/shops/${String(shopId)}/items`)
+    .set(auth(token))
+    .send({ items })
+  if (res.status !== 200) throw new Error(`addToCart failed: ${String(res.status)} ${res.text}`)
+  return res.body as Cart
 }

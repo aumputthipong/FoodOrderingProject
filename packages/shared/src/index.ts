@@ -1,5 +1,6 @@
 export * from './constants'
 export * from './schemas/common'
 export * from './schemas/auth'
+export * from './schemas/cart'
 export * from './schemas/product'
 export * from './schemas/shop'
