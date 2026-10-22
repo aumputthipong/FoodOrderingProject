@@ -1,3 +1,6 @@
+import express from 'express'
+import request from 'supertest'
+import { errorHandler } from '../src/common/middlewares/errorHandler'
 import { api } from './helpers/app'
 
 test('GET /api/health', async () => {
@@ -21,4 +24,23 @@ test('allows only configured CORS origins', async () => {
   expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:5173')
   const bad = await api().get('/api/health').set('Origin', 'http://evil.test')
   expect(bad.headers['access-control-allow-origin']).toBeUndefined()
+})
+
+test('malformed JSON body returns VALIDATION_ERROR', async () => {
+  const res = await api().post('/api/health').set('Content-Type', 'application/json').send('{')
+  expect(res.status).toBe(400)
+  expect(res.body.error.code).toBe('VALIDATION_ERROR')
+})
+
+test('errorHandler turns unexpected errors into 500 without req.log', async () => {
+  const app = express()
+    .get('/boom', () => {
+      throw new Error('x')
+    })
+    .use(errorHandler)
+  const res = await request(app).get('/boom')
+  expect(res.status).toBe(500)
+  expect(res.body).toEqual({
+    error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },
+  })
 })

@@ -18,7 +18,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
   app.use(helmet())
   app.use(cors({ origin: env.CORS_ORIGINS }))
-  if (env.NODE_ENV !== 'test') app.use(pinoHttp())
+  if (env.NODE_ENV !== 'test')
+    app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }))
   app.use(express.json())
   app.use('/uploads', express.static(env.UPLOAD_DIR))
 
