@@ -1,17 +1,14 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { parseEnv } from 'node:util'
 import { defineConfig } from 'vitest/config'
-
-const testEnv = parseEnv(
-  readFileSync(fileURLToPath(new URL('./.env.test', import.meta.url)), 'utf8'),
-)
+import { loadTestEnv } from './tests/setup/test-env.ts'
 
 export default defineConfig({
   test: {
     globals: true,
     passWithNoTests: true,
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
-    env: testEnv as Record<string, string>,
+    env: loadTestEnv(),
+    globalSetup: ['./tests/setup/global-setup.ts'],
+    setupFiles: ['./tests/setup/each-test.ts'],
+    fileParallelism: false,
   },
 })
