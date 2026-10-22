@@ -331,3 +331,82 @@ describe('checkout helpers', () => {
     expect(await db.select().from(cartItems)).toHaveLength(0)
   })
 })
+
+describe('concurrency (REPEATABLE READ)', () => {
+  const ROUNDS = 6
+
+  test('two DELETEs of the last two items of one cart both succeed and remove the cart', async () => {
+    for (let round = 0; round < ROUNDS; round++) {
+      const { shop, token, a, b } = await setup()
+      const cart = await addToCart(token, shop.id, [
+        { productId: a.id, quantity: 1 },
+        { productId: b.id, quantity: 1 },
+      ])
+      const results = await Promise.all(
+        cart.items.map((item) =>
+          api()
+            .delete(`/api/cart/items/${String(item.id)}`)
+            .set(auth(token)),
+        ),
+      )
+      expect(results.map((r) => r.status)).toEqual([204, 204])
+      expect((await api().get('/api/cart').set(auth(token))).body).toEqual([])
+      expect(await db.select().from(carts)).toHaveLength(0)
+    }
+  })
+
+  test('deleting an already-deleted item is a 404', async () => {
+    const { shop, token, a, b } = await setup()
+    const cart = await addToCart(token, shop.id, [
+      { productId: a.id, quantity: 1 },
+      { productId: b.id, quantity: 1 },
+    ])
+    const url = `/api/cart/items/${String(cart.items[0]!.id)}`
+    expect((await api().delete(url).set(auth(token))).status).toBe(204)
+    expect((await api().delete(url).set(auth(token))).status).toBe(404)
+    // The cart (and its other item) is untouched by the repeated delete.
+    expect((await api().get('/api/cart').set(auth(token))).body[0].items).toHaveLength(1)
+  })
+
+  test('two concurrent DELETEs of the same item: one 204, one 404', async () => {
+    const { shop, token, a, b } = await setup()
+    const cart = await addToCart(token, shop.id, [
+      { productId: a.id, quantity: 1 },
+      { productId: b.id, quantity: 1 },
+    ])
+    const url = `/api/cart/items/${String(cart.items[0]!.id)}`
+    const results = await Promise.all([
+      api().delete(url).set(auth(token)),
+      api().delete(url).set(auth(token)),
+    ])
+    expect(results.map((r) => r.status).sort()).toEqual([204, 404])
+  })
+
+  test('two first-time PUTs for the same user and shop both succeed with one cart', async () => {
+    for (let round = 0; round < ROUNDS; round++) {
+      const { shop, token, a, b } = await setup()
+      const payloads = [
+        [{ productId: a.id, quantity: 2 }],
+        [
+          { productId: a.id, quantity: 1 },
+          { productId: b.id, quantity: 3 },
+        ],
+      ]
+      const results = await Promise.all(payloads.map((items) => putCart(token, shop.id, { items })))
+      expect(results.map((r) => r.status)).toEqual([200, 200])
+
+      const cartRows = await db.select().from(carts).where(eq(carts.shopId, shop.id))
+      expect(cartRows).toHaveLength(1)
+      const stored = (
+        await db.select().from(cartItems).where(eq(cartItems.cartId, cartRows[0]!.id))
+      )
+        .map((row) => ({ productId: row.productId, quantity: row.quantity }))
+        .sort((x, y) => x.productId - y.productId)
+      expect(payloads).toContainEqual(stored)
+      const listed = (await api().get('/api/cart').set(auth(token))).body
+      expect(listed).toHaveLength(1)
+      expect(listed[0].id).toBe(results[0]!.body.id)
+      expect(results[1]!.body.id).toBe(results[0]!.body.id)
+    }
+  })
+})

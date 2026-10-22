@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { db, type DbClient } from '../../db/client'
 import { cartItems, carts, products, shops } from '../../db/schema'
 
@@ -149,17 +149,29 @@ export async function lockItemsByCartId(
     .for('update')
 }
 
-/** Creates the user's cart for the shop if missing (touching it otherwise) and returns its id. */
+/**
+ * Creates the user's cart for the shop if missing (touching it otherwise), keeps its row locked
+ * for the rest of the transaction and returns its id. The id comes from a locking (current)
+ * read, so it is correct even when a concurrent transaction created the cart meanwhile.
+ */
 export async function upsertCart(
   userId: number,
   shopId: number,
   client: DbClient = db,
 ): Promise<number> {
-  const [result] = await client
+  await client
     .insert(carts)
     .values({ userId, shopId })
-    .onDuplicateKeyUpdate({ set: { id: sql`LAST_INSERT_ID(${carts.id})`, updatedAt: sql`NOW()` } })
-  return result.insertId
+    .onDuplicateKeyUpdate({ set: { updatedAt: sql`NOW()` } })
+  const rows = await client
+    .select({ id: carts.id })
+    .from(carts)
+    .where(and(eq(carts.userId, userId), eq(carts.shopId, shopId)))
+    .limit(1)
+    .for('update')
+  const id = rows[0]?.id
+  if (id === undefined) throw new Error('Cart missing right after upsert')
+  return id
 }
 
 export async function insertItems(
@@ -183,16 +195,35 @@ export async function updateItemQuantity(
   await client.update(cartItems).set({ quantity }).where(eq(cartItems.id, itemId))
 }
 
-export async function deleteItem(itemId: number, client: DbClient = db): Promise<void> {
-  await client.delete(cartItems).where(eq(cartItems.id, itemId))
+/** Locks one item of the cart with `FOR UPDATE`; false when it no longer exists. */
+export async function lockItem(
+  itemId: number,
+  cartId: number,
+  client: DbClient = db,
+): Promise<boolean> {
+  const rows = await client
+    .select({ id: cartItems.id })
+    .from(cartItems)
+    .where(and(eq(cartItems.id, itemId), eq(cartItems.cartId, cartId)))
+    .limit(1)
+    .for('update')
+  return rows.length > 0
 }
 
-export async function countItems(cartId: number, client: DbClient = db): Promise<number> {
-  const [row] = await client
-    .select({ total: count() })
+/** Number of rows deleted (0 when the item was already gone). */
+export async function deleteItem(itemId: number, client: DbClient = db): Promise<number> {
+  const [result] = await client.delete(cartItems).where(eq(cartItems.id, itemId))
+  return result.affectedRows
+}
+
+/** Locking (current) count: unlike a plain read it ignores the transaction's old snapshot. */
+export async function countItemsForUpdate(cartId: number, client: DbClient = db): Promise<number> {
+  const rows = await client
+    .select({ id: cartItems.id })
     .from(cartItems)
     .where(eq(cartItems.cartId, cartId))
-  return row?.total ?? 0
+    .for('update')
+  return rows.length
 }
 
 /** Deletes the cart (its items go with it via ON DELETE CASCADE). */

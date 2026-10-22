@@ -39,9 +39,10 @@ export async function replaceCartItems(
   }
 
   return withTransaction(async (tx) => {
-    await assertAllAvailable(shopId, items, tx)
-    // The upsert takes the cart's row lock, serialising concurrent replacements of one cart.
+    // Lock first: under REPEATABLE READ the first plain read fixes the snapshot, and it must not
+    // predate the wait for a concurrent replacement of the same cart.
     const cartId = await repo.upsertCart(userId, shopId, tx)
+    await assertAllAvailable(shopId, items, tx)
     await repo.deleteItemsByCartId(cartId, tx)
     await repo.insertItems(cartId, items, tx)
     return loadCart(cartId, tx)
@@ -63,14 +64,19 @@ export async function updateCartItem(
 
 /** Removes one item; the cart goes with its last item. */
 export async function removeCartItem(userId: number, itemId: number): Promise<void> {
+  // Plain lookup outside the transaction: it only finds the cart to lock and keeps no snapshot.
+  const owned = await repo.findOwnedItem(userId, itemId)
+  if (!owned) throw new NotFoundError(ITEM_NOT_FOUND)
+
   await withTransaction(async (tx) => {
-    const owned = await repo.findOwnedItem(userId, itemId, tx)
-    if (!owned) throw new NotFoundError(ITEM_NOT_FOUND)
-    // Lock the cart so two concurrent deletions cannot both see a non-empty cart.
+    // Lock order is cart, then item. Everything below is a locking (current) read, so it sees
+    // what concurrent transactions committed while this one waited for the cart lock.
     if (!(await repo.lockOwnedCart(userId, owned.cartId, tx)))
       throw new NotFoundError(ITEM_NOT_FOUND)
-    await repo.deleteItem(owned.id, tx)
-    if ((await repo.countItems(owned.cartId, tx)) === 0) await repo.deleteCart(owned.cartId, tx)
+    if (!(await repo.lockItem(owned.id, owned.cartId, tx))) throw new NotFoundError(ITEM_NOT_FOUND)
+    if ((await repo.deleteItem(owned.id, tx)) === 0) throw new NotFoundError(ITEM_NOT_FOUND)
+    if ((await repo.countItemsForUpdate(owned.cartId, tx)) === 0)
+      await repo.deleteCart(owned.cartId, tx)
   })
 }
 
