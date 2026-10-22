@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import type { LoginInput, LoginResponse, SignupInput, User } from '@canteen/shared'
+import { isDuplicateEntry } from '../../common/dbErrors'
 import { ConflictError, UnauthorizedError } from '../../common/errors'
 import { toUser } from './auth.mapper'
 import * as repo from './auth.repository'
@@ -10,16 +11,6 @@ const BCRYPT_COST = 10
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_COST)
 const INVALID_CREDENTIALS = 'Invalid username or password'
 const USERNAME_TAKEN = 'Username is already taken'
-
-function isDuplicateEntry(err: unknown): boolean {
-  let current: unknown = err
-  // Drizzle wraps the driver error in `cause`.
-  for (let depth = 0; depth < 3 && typeof current === 'object' && current !== null; depth++) {
-    if ((current as { code?: unknown }).code === 'ER_DUP_ENTRY') return true
-    current = (current as { cause?: unknown }).cause
-  }
-  return false
-}
 
 export async function signup(input: SignupInput): Promise<User> {
   if (await repo.usernameExists(input.username)) throw new ConflictError(USERNAME_TAKEN)

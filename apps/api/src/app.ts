@@ -9,6 +9,7 @@ import { notFound } from './common/middlewares/notFound'
 import { env } from './config/env'
 import { createAuthRouter } from './modules/auth/auth.routes'
 import { healthRouter } from './modules/health/health.routes'
+import { shopsRouter } from './modules/shops/shops.routes'
 
 export type CreateAppOptions = { loginRateLimitPerMinute?: number }
 
@@ -37,6 +38,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const apiRouter = express.Router()
   apiRouter.use(healthRouter)
   apiRouter.use('/auth', createAuthRouter(loginLimiter))
+  apiRouter.use('/shops', shopsRouter)
   app.use('/api', apiRouter)
 
   app.use(notFound)
