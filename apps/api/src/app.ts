@@ -10,6 +10,7 @@ import { env } from './config/env'
 import { createAuthRouter } from './modules/auth/auth.routes'
 import { cartRouter } from './modules/cart/cart.routes'
 import { healthRouter } from './modules/health/health.routes'
+import { ordersRouter, shopOrdersRouter } from './modules/orders/orders.routes'
 import { productsRouter } from './modules/products/products.routes'
 import { shopsRouter } from './modules/shops/shops.routes'
 
@@ -40,9 +41,12 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const apiRouter = express.Router()
   apiRouter.use(healthRouter)
   apiRouter.use('/auth', createAuthRouter(loginLimiter))
+  // Before shopsRouter, otherwise `/shops/mine/orders` would be matched by `/shops/:id`.
+  apiRouter.use('/shops/mine/orders', shopOrdersRouter)
   apiRouter.use('/shops', shopsRouter)
   apiRouter.use('/cart', cartRouter)
   apiRouter.use(productsRouter)
+  apiRouter.use(ordersRouter)
   app.use('/api', apiRouter)
 
   app.use(notFound)

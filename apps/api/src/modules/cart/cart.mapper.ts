@@ -1,11 +1,7 @@
 import type { Cart, CartItem } from '@canteen/shared'
 import { toImageUrl } from '../../common/http'
+import { roundMoney } from '../../common/money'
 import type { CartItemRow, CartWithShopRow } from './cart.repository'
-
-/** Rounds a money amount to 2 decimals. */
-export function roundMoney(amount: number): number {
-  return Math.round((amount + Number.EPSILON) * 100) / 100
-}
 
 export function toCartItem(row: CartItemRow): CartItem {
   return {

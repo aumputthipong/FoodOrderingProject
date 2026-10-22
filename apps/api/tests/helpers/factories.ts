@@ -1,8 +1,8 @@
 import path from 'node:path'
 import bcrypt from 'bcrypt'
-import type { Cart, ProductStatus, Role } from '@canteen/shared'
+import type { Cart, OrderStatus, ProductStatus, Role } from '@canteen/shared'
 import { db } from '../../src/db/client'
-import { products, shops, users } from '../../src/db/schema'
+import { orderItems, orders, products, shops, users } from '../../src/db/schema'
 import { api, auth } from './app'
 
 const DEFAULT_PASSWORD = 'Password123'
@@ -81,4 +81,28 @@ export async function addToCart(
     .send({ items })
   if (res.status !== 200) throw new Error(`addToCart failed: ${String(res.status)} ${res.text}`)
   return res.body as Cart
+}
+
+/**
+ * Inserts an order with its items straight into the DB, so tests control status and timestamps.
+ * A finished order without an explicit `finishedAt` is finished at `createdAt`.
+ */
+export async function createOrder(
+  customerId: number,
+  shopId: number,
+  items: { productId: number; quantity: number; unitPrice: number }[],
+  opts: { status?: OrderStatus; createdAt?: Date; finishedAt?: Date | null } = {},
+): Promise<{ id: number }> {
+  const status = opts.status ?? 'waiting'
+  const createdAt = opts.createdAt ?? new Date()
+  const finishedAt =
+    opts.finishedAt !== undefined ? opts.finishedAt : status === 'finished' ? createdAt : null
+  const [result] = await db
+    .insert(orders)
+    .values({ customerId, shopId, status, createdAt, finishedAt })
+  const id = result.insertId
+  if (items.length > 0) {
+    await db.insert(orderItems).values(items.map((item) => ({ orderId: id, ...item })))
+  }
+  return { id }
 }
