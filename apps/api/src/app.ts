@@ -1,18 +1,29 @@
 import cors from 'cors'
 import express, { type Express } from 'express'
+import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { pinoHttp } from 'pino-http'
+import { AppError } from './common/errors'
 import { errorHandler } from './common/middlewares/errorHandler'
 import { notFound } from './common/middlewares/notFound'
 import { env } from './config/env'
+import { createAuthRouter } from './modules/auth/auth.routes'
 import { healthRouter } from './modules/health/health.routes'
 
 export type CreateAppOptions = { loginRateLimitPerMinute?: number }
 
 export function createApp(options: CreateAppOptions = {}): Express {
-  // Consumed by the auth router once it exists (Task 5).
   const { loginRateLimitPerMinute = env.LOGIN_RATE_LIMIT_PER_MINUTE } = options
-  void loginRateLimitPerMinute
+  // Created per app so each instance (and each test) has its own counter store.
+  const loginLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: loginRateLimitPerMinute,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    handler: (_req, _res, next) => {
+      next(new AppError(429, 'RATE_LIMITED', 'Too many login attempts, please try again later'))
+    },
+  })
 
   const app = express()
 
@@ -25,6 +36,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
   const apiRouter = express.Router()
   apiRouter.use(healthRouter)
+  apiRouter.use('/auth', createAuthRouter(loginLimiter))
   app.use('/api', apiRouter)
 
   app.use(notFound)
