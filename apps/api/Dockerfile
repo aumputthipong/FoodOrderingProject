@@ -28,4 +28,4 @@ COPY --from=build /repo/apps/api/seed/images ./seed/images
 RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 USER node
 EXPOSE 3000
-CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && node dist/server.js"]
+CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && exec node dist/server.js"]
