@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { createPinia } from 'pinia'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/features/auth'
 import { queryClient } from '@/lib/query-client'
 import { setToken } from '@/lib/token-storage'
@@ -222,4 +223,40 @@ test('edits before the cart has loaded are ignored, then later edits keep the ex
       { productId: 2, quantity: 1 },
     ],
   })
+})
+
+test('a sold-out product in the server cart is left out of the payload and an info toast shows', async () => {
+  const toastInfo = vi.spyOn(toast, 'info').mockImplementation(() => '')
+  const existing = makeCart({
+    id: 1,
+    shop: { id: 1, name: 'ร้านข้าวมันไก่', imageUrl: null },
+    items: [1, 2].map((productId) => ({
+      id: productId,
+      productId,
+      name: `เมนู ${productId}`,
+      imageUrl: null,
+      price: 50,
+      quantity: 1,
+      subtotal: 50,
+    })),
+    totalPrice: 100,
+  })
+  server.use(http.get('*/api/cart', () => HttpResponse.json([existing])))
+  const puts = trackPuts()
+  let draft!: ReturnType<typeof useShopCartDraft>
+  const Host = defineComponent({
+    setup() {
+      draft = useShopCartDraft(1, { isAvailable: (id) => id !== 2 })
+      return () => h('div')
+    },
+  })
+  const pinia = createPinia()
+  useAuthStore(pinia).user = makeUser()
+  mount(Host, { global: { plugins: [pinia, [VueQueryPlugin, { queryClient }]] } })
+  await vi.waitFor(() => expect(draft.quantities.value).toEqual({ 1: 1, 2: 1 }))
+  draft.setQuantity(1, 3)
+  await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)
+  await vi.waitFor(() => expect(puts).toHaveLength(1))
+  expect(puts[0]).toEqual({ items: [{ productId: 1, quantity: 3 }] })
+  await vi.waitFor(() => expect(toastInfo).toHaveBeenCalledWith('นำเมนูที่หมดแล้วออกจากตะกร้า'))
 })

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
-import { errorMessage } from '@/lib/error-messages'
+import { cartErrorMessage } from '@/lib/error-messages'
 import { queryKeys } from '@/lib/query-keys'
 import { checkout, getMyOrders } from './api'
 
@@ -26,7 +26,7 @@ export function useCheckoutMutation() {
       ])
     },
     onError: (error) => {
-      toast.error(errorMessage(error))
+      toast.error(cartErrorMessage(error))
     },
   })
 }

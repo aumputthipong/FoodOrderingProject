@@ -2,6 +2,7 @@ import type { CartItem } from '@canteen/shared'
 import type { VueWrapper } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
+import { toast } from 'vue-sonner'
 import { QUEUE_REFETCH_MS } from '@/features/orders'
 import { queryClient } from '@/lib/query-client'
 import { makeCart, makeOrder, makeUser } from './fixtures'
@@ -165,4 +166,30 @@ test('my orders refetches every 15 seconds', async () => {
   expect(requests).toHaveBeenCalledTimes(1)
   await vi.advanceTimersByTimeAsync(1_500)
   await vi.waitFor(() => expect(requests).toHaveBeenCalledTimes(2))
+})
+
+test('checkout rejected for a sold-out item shows the translated reason', async () => {
+  const toastError = vi.spyOn(toast, 'error').mockImplementation(() => '')
+  server.use(
+    http.get('*/api/cart', () => HttpResponse.json([makeCart({ id: 5 })])),
+    http.post('*/api/orders', () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Validation failed',
+            details: [{ path: 'cartId', message: 'All products in the cart must be available' }],
+          },
+        },
+        { status: 400 },
+      ),
+    ),
+  )
+  const { wrapper, router } = await mountApp({ path: '/cart', user: makeUser() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งอาหารร้านนี้'))
+  await findButton(wrapper, 'สั่งอาหารร้านนี้').trigger('click')
+  await vi.waitFor(() =>
+    expect(toastError).toHaveBeenCalledWith('มีเมนูที่หมดแล้วอยู่ในตะกร้า กรุณาลบออกก่อนสั่ง'),
+  )
+  expect(router.currentRoute.value.name).toBe('cart')
 })

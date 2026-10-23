@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { toast } from 'vue-sonner'
-import { errorMessage } from '@/lib/error-messages'
+import { cartErrorMessage } from '@/lib/error-messages'
 import { queryKeys } from '@/lib/query-keys'
 import { replaceCartItems } from '../api'
 import { useCartsQuery } from '../queries'
@@ -11,9 +11,14 @@ const MAX_QUANTITY = 99
 
 export function useShopCartDraft(
   shopId: MaybeRefOrGetter<number>,
-  options: { onError?: (error: unknown) => void } = {},
+  options: {
+    onError?: (error: unknown) => void
+    // products known to be sold out are never sent: the server rejects the whole cart otherwise
+    isAvailable?: (productId: number) => boolean
+  } = {},
 ) {
-  const onError = options.onError ?? ((error: unknown) => toast.error(errorMessage(error)))
+  const onError = options.onError ?? ((error: unknown) => toast.error(cartErrorMessage(error)))
+  const isAvailable = options.isAvailable ?? (() => true)
   const queryClient = useQueryClient()
   const { data: carts } = useCartsQuery()
   const quantities = ref<Record<number, number>>({})
@@ -45,9 +50,11 @@ export function useShopCartDraft(
     inFlight = true
     dirty = false
     waiting = false
-    const items = Object.entries(quantities.value)
+    const wanted = Object.entries(quantities.value)
       .map(([productId, quantity]) => ({ productId: Number(productId), quantity }))
       .filter((item) => item.quantity > 0)
+    const items = wanted
+      .filter((item) => isAvailable(item.productId))
       .sort((a, b) => a.productId - b.productId)
     try {
       await replaceCartItems(fixedShopId, items)
@@ -62,6 +69,7 @@ export function useShopCartDraft(
       return
     }
     inFlight = false
+    if (items.length < wanted.length) toast.info('นำเมนูที่หมดแล้วออกจากตะกร้า')
     if (waiting) return send()
     await queryClient.invalidateQueries({ queryKey: queryKeys.cart })
     syncFromServer()

@@ -23,7 +23,10 @@ const shopId = computed(() => {
 })
 const { data: shop, isPending, error, refetch } = useShopQuery(shopId)
 
-const { quantities, setQuantity, itemCount, ready } = useShopCartDraft(() => shopId.value ?? 0)
+const { quantities, setQuantity, itemCount, ready } = useShopCartDraft(() => shopId.value ?? 0, {
+  isAvailable: (productId) =>
+    shop.value?.products.find((product) => product.id === productId)?.status !== 'not-available',
+})
 
 function onChange(productId: number, quantity: number): void {
   if (!auth.isLoggedIn) {

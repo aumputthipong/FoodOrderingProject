@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/features/auth'
-import { errorMessage } from '@/lib/error-messages'
+import { cartErrorMessage } from '@/lib/error-messages'
 import { queryKeys } from '@/lib/query-keys'
 import { getCarts, removeCartItem, updateCartItem } from './api'
 
@@ -32,7 +32,7 @@ export function useUpdateCartItemMutation() {
       updateCartItem(id, quantity),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cart }),
     onError: (error) => {
-      toast.error(errorMessage(error))
+      toast.error(cartErrorMessage(error))
     },
   })
 }

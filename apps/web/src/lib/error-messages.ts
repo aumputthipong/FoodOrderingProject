@@ -24,6 +24,9 @@ const VALIDATION_MESSAGES: Record<string, string> = {
   'Image is required': 'กรุณาเลือกรูป',
   'Image must be a JPEG, PNG, WebP, AVIF or GIF file':
     'รองรับเฉพาะไฟล์ JPEG, PNG, WebP, AVIF หรือ GIF',
+  'All products must belong to this shop and be available': 'มีเมนูที่หมดแล้วอยู่ในตะกร้า',
+  'All products in the cart must be available': 'มีเมนูที่หมดแล้วอยู่ในตะกร้า กรุณาลบออกก่อนสั่ง',
+  'The cart is empty': 'ตะกร้าว่าง',
 }
 
 export function errorMessage(
@@ -36,4 +39,13 @@ export function errorMessage(
 
 export function translateValidationMessage(message: string, fallback?: string): string {
   return VALIDATION_MESSAGES[message] ?? fallback ?? message
+}
+
+// Cart and checkout reject with a specific reason (sold-out items, empty cart): show it when known.
+export function cartErrorMessage(error: unknown): string {
+  const detail = isApiError(error) && error.code === 'VALIDATION_ERROR' ? error.details?.[0] : null
+  if (detail && detail.message in VALIDATION_MESSAGES) {
+    return translateValidationMessage(detail.message)
+  }
+  return errorMessage(error)
 }
