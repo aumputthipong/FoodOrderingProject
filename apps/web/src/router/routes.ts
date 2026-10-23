@@ -50,19 +50,19 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/account',
     name: 'account',
-    component: placeholder,
+    component: () => import('@/features/auth/pages/AccountPage.vue'),
     meta: { layout: 'customer', requiresAuth: true, title: 'บัญชี' },
   },
   {
     path: '/login',
     name: 'login',
-    component: placeholder,
+    component: () => import('@/features/auth/pages/LoginPage.vue'),
     meta: { layout: 'auth', guestOnly: true, title: 'เข้าสู่ระบบ' },
   },
   {
     path: '/signup',
     name: 'signup',
-    component: placeholder,
+    component: () => import('@/features/auth/pages/SignupPage.vue'),
     meta: { layout: 'auth', guestOnly: true, title: 'สมัครสมาชิก' },
   },
   { path: '/merchant', redirect: { name: 'merchant-queue' } },

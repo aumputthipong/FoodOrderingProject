@@ -20,7 +20,7 @@ test('a 401 during use clears the session and sends the user to login with a red
   await api.get('/api/cart', { schema: z.unknown() }).catch(() => {})
   await flushPromises()
 
-  expect(router.currentRoute.value.name).toBe('login')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
   expect(router.currentRoute.value.query.redirect).toBe('/cart')
   expect(getToken()).toBeNull()
   expect(queryClient.getQueryData(queryKeys.cart)).toBeUndefined()
