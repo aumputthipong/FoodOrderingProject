@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Product } from '@canteen/shared'
-import { Plus } from '@lucide/vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import PriceTag from '@/components/PriceTag.vue'
 import { cn } from '@/lib/utils'
+import QuantityStepper from './QuantityStepper.vue'
 
-const props = defineProps<{ product: Product; quantity: number; disabled?: boolean }>()
+defineProps<{ product: Product; quantity: number }>()
 const emit = defineEmits<{ change: [quantity: number] }>()
 </script>
 
@@ -13,7 +13,8 @@ const emit = defineEmits<{ change: [quantity: number] }>()
   <div
     :class="
       cn(
-        'flex gap-3 rounded-[14px] bg-card p-2.5',
+        'flex gap-3 rounded-[14px] border-2 bg-card p-2.5',
+        quantity > 0 ? 'border-primary' : 'border-transparent',
         product.status === 'not-available' && 'opacity-60',
       )
     "
@@ -33,17 +34,12 @@ const emit = defineEmits<{ change: [quantity: number] }>()
           class="rounded-md bg-border px-2 py-0.5 text-xs font-semibold text-stone-700"
           >หมดชั่วคราว</span
         >
-        <slot v-else>
-          <button
-            type="button"
-            :aria-label="`เพิ่ม ${product.name} ลงตะกร้า`"
-            :disabled="disabled"
-            class="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
-            @click="emit('change', props.quantity + 1)"
-          >
-            <Plus class="size-5" aria-hidden="true" />
-          </button>
-        </slot>
+        <QuantityStepper
+          v-else
+          :model-value="quantity"
+          :label="product.name"
+          @update:model-value="emit('change', $event)"
+        />
       </div>
     </div>
   </div>

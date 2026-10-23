@@ -137,3 +137,46 @@ test('merchant layout shows the shop name', async () => {
     expect(wrapper.get('[data-testid="merchant-sidebar"]').text()).toContain('ร้านของฉัน'),
   )
 })
+
+function mockShop3() {
+  server.use(
+    http.get('*/api/shops/3', () =>
+      HttpResponse.json(
+        makeShopDetail({
+          id: 3,
+          name: 'ร้านข้าวแกง',
+          products: [
+            makeProduct({ id: 1, shopId: 3, name: 'แกงเขียวหวาน', price: 60 }),
+            makeProduct({ id: 2, shopId: 3, name: 'แกงส้ม', price: 45 }),
+          ],
+        }),
+      ),
+    ),
+  )
+}
+
+test('guest tapping + is sent to login with redirect back to the shop', async () => {
+  mockShop3()
+  const { wrapper, router } = await mountApp({ path: '/shops/3' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
+  await wrapper.get('[aria-label="เพิ่มจำนวน แกงเขียวหวาน"]').trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
+  expect(router.currentRoute.value.query.redirect).toBe('/shops/3')
+})
+
+test('floating bar shows count and total after adding', async () => {
+  mockShop3()
+  server.use(http.put('*/api/cart/shops/3/items', () => new HttpResponse(null, { status: 204 })))
+  const { wrapper } = await mountApp({ path: '/shops/3', user: makeUser() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
+  expect(wrapper.text()).not.toContain('ดูตะกร้า')
+  const add = '[aria-label="เพิ่มจำนวน แกงเขียวหวาน"]'
+  await wrapper.get(add).trigger('click')
+  await wrapper.get(add).trigger('click')
+  await wrapper.get('[aria-label="เพิ่มจำนวน แกงส้ม"]').trigger('click')
+  const bar = wrapper.get('[data-testid="cart-bar"]')
+  expect(bar.text()).toContain('ดูตะกร้า')
+  expect(bar.text()).toContain('3')
+  expect(bar.text()).toContain('฿165')
+  expect(bar.attributes('href')).toBe('/cart')
+})
