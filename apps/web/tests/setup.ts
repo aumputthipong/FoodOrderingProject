@@ -5,7 +5,11 @@ import { server } from './msw/server'
 
 z.config(z.locales.th())
 
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
+beforeAll(() => {
+  server.listen({ onUnhandledFrame: 'error' })
+  // jsdom does not implement scrolling; the router's scrollBehavior calls it
+  window.scrollTo = () => {}
+})
 
 beforeEach(() => {
   setActivePinia(createPinia())
