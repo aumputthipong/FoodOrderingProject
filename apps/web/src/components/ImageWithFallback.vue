@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { UtensilsCrossed } from '@lucide/vue'
 import { ref, watch } from 'vue'
+import { cn } from '@/lib/utils'
 
-const props = defineProps<{ src: string | null; alt: string; ratio: '16/10' | '1/1' | '16/9' }>()
+const props = defineProps<{
+  src: string | null
+  alt: string
+  ratio: '16/10' | '1/1' | '16/9'
+  class?: string
+}>()
 
 const failed = ref(false)
 watch(
@@ -14,7 +20,10 @@ watch(
 </script>
 
 <template>
-  <div class="w-full overflow-hidden bg-primary/10" :style="{ aspectRatio: ratio }">
+  <div
+    :class="cn('w-full overflow-hidden bg-primary/10', props.class)"
+    :style="{ aspectRatio: ratio }"
+  >
     <img
       v-if="src && !failed"
       :src="src"

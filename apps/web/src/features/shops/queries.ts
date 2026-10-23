@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/vue-query'
+import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { queryKeys } from '@/lib/query-keys'
 import { getShop, getShops } from './api'
@@ -7,6 +7,7 @@ export function useShopsQuery(search: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => queryKeys.shops.list(toValue(search))),
     queryFn: () => getShops(toValue(search)),
+    placeholderData: keepPreviousData,
   })
 }
 

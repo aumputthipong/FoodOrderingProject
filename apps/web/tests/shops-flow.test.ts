@@ -52,6 +52,8 @@ test('no results shows the empty state', async () => {
   server.use(http.get('*/api/shops', () => HttpResponse.json([])))
   const { wrapper } = await mountApp({ path: '/?q=zzz' })
   await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  expect(wrapper.text()).toContain('ลองค้นด้วยชื่อร้านอื่น')
+  expect(wrapper.text()).toContain('ล้างคำค้นหา')
 })
 
 test('no shops at all shows the empty canteen state', async () => {
@@ -259,4 +261,87 @@ test('navigating to a shop within the search debounce never stamps ?q= onto the 
   await new Promise((resolve) => setTimeout(resolve, 450))
   expect(router.currentRoute.value.fullPath).toBe('/shops/1')
   await vi.waitFor(() => expect(wrapper.text()).toContain('ข้าวมันไก่'))
+})
+
+function searchInput(wrapper: { get: (s: string) => { element: Element } }): HTMLInputElement {
+  return wrapper.get('input[type="search"]').element as HTMLInputElement
+}
+
+test('back/forward restores the search box without re-writing the URL', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก๋วย')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  const replace = vi.spyOn(router, 'replace')
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  expect(replace).not.toHaveBeenCalled()
+  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+})
+
+test('back/forward cancels a pending debounce so it cannot overwrite the restored box', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/?q=ก๋วย' })
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  await wrapper.get('input[type="search"]').setValue('ข้าวมัน')
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+  expect(searchInput(wrapper).value).toBe('ก๋วย')
+})
+
+test('typing is not overwritten by an older ?q= while debounce is pending', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก๋')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋'))
+  await input.setValue('ก๋ว')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋ว'))
+  await input.setValue('ก๋วย')
+  expect(searchInput(wrapper).value).toBe('ก๋วย')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
+  expect(searchInput(wrapper).value).toBe('ก๋วย')
+})
+
+test('clear-search button clears ?q= and shows all shops', async () => {
+  const seen: (string | null)[] = []
+  server.use(
+    http.get('*/api/shops', ({ request }) => {
+      const search = new URL(request.url).searchParams.get('search')
+      seen.push(search)
+      return HttpResponse.json(search ? [] : [makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
+    }),
+  )
+  const { wrapper, router } = await mountApp({ path: '/?q=zzz' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  const clear = wrapper.findAll('button').find((b) => b.text() === 'ล้างคำค้นหา')
+  expect(clear).toBeDefined()
+  await clear!.trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBeUndefined())
+  expect(searchInput(wrapper).value).toBe('')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว'))
+})
+
+test('banner is hidden while searching and shown again after clearing', async () => {
+  trackSearch()
+  const { wrapper } = await mountApp({ path: '/' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งก่อน รับก่อน'))
+  expect(wrapper.text()).toContain('#12')
+  await wrapper.get('input[type="search"]').setValue('ก๋วย')
+  await vi.waitFor(() => expect(wrapper.text()).not.toContain('สั่งก่อน รับก่อน'))
+})
+
+test('search box wrapper shows a visible focus indicator', async () => {
+  trackSearch()
+  const { wrapper } = await mountApp({ path: '/' })
+  expect(wrapper.get('input[type="search"]').element.parentElement?.className).toContain(
+    'focus-within:outline-ring',
+  )
 })

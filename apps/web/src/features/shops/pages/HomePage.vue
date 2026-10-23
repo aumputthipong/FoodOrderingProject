@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { Search, SearchX } from '@lucide/vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import ErrorState from '@/components/ErrorState.vue'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import ShopCard from '../components/ShopCard.vue'
 import { useShopsQuery } from '../queries'
@@ -23,20 +24,37 @@ const search = computed(() => queryParam().trim())
 const { data: shops, isPending, isError, error, refetch } = useShopsQuery(search)
 
 let syncTimer: ReturnType<typeof setTimeout> | null = null
+// values this page wrote to the URL that the route has not reported back yet
+const written = new Set<string>()
 
 function cancelSync(): void {
   if (syncTimer !== null) clearTimeout(syncTimer)
   syncTimer = null
 }
 
+function writeUrl(trimmed: string): void {
+  written.add(trimmed)
+  void router.replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
+}
+
 function syncUrl(value: string): void {
   cancelSync()
   syncTimer = setTimeout(() => {
     syncTimer = null
-    const trimmed = value.trim()
-    void router.replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
+    writeUrl(value.trim())
   }, SEARCH_DEBOUNCE_MS)
 }
+
+// back/forward: show the URL's term in the box, without writing it back
+watch(
+  () => queryParam().trim(),
+  (q) => {
+    if (written.delete(q)) return
+    written.clear()
+    cancelSync()
+    input.value = q
+  },
+)
 
 // a pending update must never stamp ?q= onto the page we are leaving for
 onBeforeRouteLeave(cancelSync)
@@ -46,6 +64,12 @@ function onInput(event: Event): void {
   input.value = (event.target as HTMLInputElement).value
   syncUrl(input.value)
 }
+
+function clearSearch(): void {
+  cancelSync()
+  input.value = ''
+  writeUrl('')
+}
 </script>
 
 <template>
@@ -53,7 +77,7 @@ function onInput(event: Event): void {
     <div class="bg-card px-4 pb-3.5 pt-1 md:bg-transparent md:pt-6">
       <label class="sr-only" for="shop-search">ค้นหาร้าน</label>
       <div
-        class="flex h-11 items-center gap-2.5 rounded-full bg-background px-3.5 text-muted-foreground md:max-w-md md:bg-card"
+        class="flex h-11 items-center gap-2.5 rounded-full bg-background px-3.5 text-muted-foreground focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring md:max-w-md md:bg-card"
       >
         <Search class="size-[18px] shrink-0" aria-hidden="true" />
         <input
@@ -63,33 +87,63 @@ function onInput(event: Event): void {
           placeholder="ค้นหาร้านอาหาร"
           autocomplete="off"
           :value="input"
-          class="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
+          class="min-w-0 flex-1 bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
           @input="onInput"
         />
       </div>
     </div>
     <div class="flex flex-col gap-4 p-4">
       <section
-        class="flex items-center justify-between gap-3 rounded-2xl bg-primary p-[18px] text-primary-foreground"
+        v-if="!search"
+        class="flex items-center justify-between gap-3 rounded-card bg-primary p-[18px] text-primary-foreground md:p-8"
       >
         <div class="flex flex-col gap-1">
-          <span class="font-heading text-xl font-semibold">สั่งก่อน รับก่อน</span>
-          <span class="text-[13px] leading-normal">สั่งจากโต๊ะ แล้วดูคิวได้ในแอป</span>
+          <span class="font-heading text-xl font-semibold md:text-3xl">สั่งก่อน รับก่อน</span>
+          <span class="text-caption leading-normal md:text-body-sm"
+            >สั่งจากโต๊ะ แล้วดูคิวได้ในแอป</span
+          >
         </div>
-        <span class="size-14 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+        <span
+          class="flex shrink-0 rotate-6 flex-col items-center gap-1 rounded-xl bg-accent px-3 py-2 font-heading text-accent-foreground"
+          aria-hidden="true"
+        >
+          <span class="text-title font-bold leading-none">#12</span>
+          <span class="w-full border-t-2 border-dashed border-accent-foreground/40" />
+          <span class="h-1 w-8 rounded-full bg-accent-foreground/30" />
+        </span>
       </section>
       <div class="flex items-baseline justify-between">
-        <h1 class="font-heading text-lg font-semibold">ร้านในโรงอาหาร</h1>
-        <span v-if="shops" class="text-[13px] text-muted-foreground">{{ shops.length }} ร้าน</span>
+        <h1 class="page-title">ร้านในโรงอาหาร</h1>
+        <span v-if="shops" class="text-caption text-muted-foreground">{{ shops.length }} ร้าน</span>
       </div>
       <div v-if="isPending" class="grid grid-cols-1 gap-2.5 md:grid-cols-3 md:gap-4">
-        <Skeleton v-for="n in 4" :key="n" class="h-24 rounded-[14px] md:h-56" />
+        <div
+          v-for="n in 4"
+          :key="n"
+          data-testid="shop-skeleton"
+          class="flex gap-3 rounded-card bg-card p-2.5 md:flex-col md:gap-0 md:overflow-hidden md:p-0"
+        >
+          <Skeleton
+            class="aspect-square w-[76px] shrink-0 rounded-thumb md:aspect-[16/10] md:w-full md:rounded-none"
+          />
+          <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5 md:p-3.5">
+            <Skeleton class="h-5 w-2/3" />
+            <Skeleton class="h-4 w-full" />
+          </div>
+        </div>
       </div>
       <ErrorState v-else-if="isError" :error="error" @retry="refetch()" />
       <EmptyState
-        v-else-if="shops && shops.length === 0"
-        :title="search ? 'ไม่พบร้านที่ค้นหา' : 'ยังไม่มีร้านในโรงอาหาร'"
-      />
+        v-else-if="shops && shops.length === 0 && search"
+        :icon="SearchX"
+        title="ไม่พบร้านที่ค้นหา"
+        description="ลองค้นด้วยชื่อร้านอื่น"
+      >
+        <template #action>
+          <Button variant="outline" @click="clearSearch">ล้างคำค้นหา</Button>
+        </template>
+      </EmptyState>
+      <EmptyState v-else-if="shops && shops.length === 0" title="ยังไม่มีร้านในโรงอาหาร" />
       <div v-else class="grid grid-cols-1 gap-2.5 md:grid-cols-3 md:gap-4">
         <ShopCard v-for="shop in shops" :key="shop.id" :shop="shop" />
       </div>
