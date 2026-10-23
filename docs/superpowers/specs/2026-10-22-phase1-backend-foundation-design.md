@@ -27,7 +27,7 @@
 - ตั้ง monorepo: pnpm workspaces, tsconfig / ESLint / Prettier กลาง
 - `packages/shared`: Zod schema ของ request และ response, ค่าคงที่ (role, สถานะต่างๆ)
 - `apps/api`: ทุก endpoint ในข้อ 8 พร้อม test
-- Drizzle schema + migration `0001_initial` + seed
+- Drizzle schema + migration `0000_initial` + seed
 - Docker Compose (MySQL + API), GitHub Actions CI, Swagger UI
 - ลบ backend JS เดิม
 
@@ -154,7 +154,7 @@ src/
 
 ## 6. Database
 
-### 6.1 Schema (`0001_initial`)
+### 6.1 Schema (`0000_initial`)
 
 Naming:
 - **ใน DB:** ชื่อตารางและคอลัมน์เป็น snake_case
@@ -185,7 +185,7 @@ Naming:
 | `password` | `password_hash` |
 
 - **ข้อความบนหน้าจอ:** ยังเรียกว่า "คิว" ได้ตามเดิม
-- **สถานะออเดอร์:** คงไว้เป็น `waiting` / `finished` ในเฟสนี้ เพื่อให้ฟีเจอร์เท่าเดิม เฟส 3 จะเปลี่ยนผ่าน migration `0002`
+- **สถานะออเดอร์:** คงไว้เป็น `waiting` / `finished` ในเฟสนี้ เพื่อให้ฟีเจอร์เท่าเดิม เฟส 3 จะเปลี่ยนผ่าน migration `0001_order_status_flow`
 
 ### 6.2 Workflow ของ migration
 
