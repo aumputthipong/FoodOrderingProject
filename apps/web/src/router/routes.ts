@@ -38,13 +38,13 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/cart',
     name: 'cart',
-    component: placeholder,
+    component: () => import('@/features/cart/pages/CartPage.vue'),
     meta: { layout: 'customer', requiresAuth: true, title: 'ตะกร้า' },
   },
   {
     path: '/orders',
     name: 'orders',
-    component: placeholder,
+    component: () => import('@/features/orders/pages/MyOrdersPage.vue'),
     meta: { layout: 'customer', requiresAuth: true, title: 'คิวของฉัน' },
   },
   {

@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
+import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/features/auth'
+import { errorMessage } from '@/lib/error-messages'
 import { queryKeys } from '@/lib/query-keys'
-import { getCarts } from './api'
+import { getCarts, removeCartItem, updateCartItem } from './api'
 
 export function useCartsQuery() {
   const auth = useAuthStore()
@@ -21,4 +23,27 @@ export function useCartCount() {
       0,
     ),
   )
+}
+
+export function useUpdateCartItemMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, quantity }: { id: number; quantity: number }) =>
+      updateCartItem(id, quantity),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cart }),
+    onError: (error) => {
+      toast.error(errorMessage(error))
+    },
+  })
+}
+
+export function useRemoveCartItemMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => removeCartItem(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cart }),
+    onError: (error) => {
+      toast.error(errorMessage(error))
+    },
+  })
 }
