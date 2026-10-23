@@ -3,8 +3,8 @@
 รายการนี้รวบรวมจากการรีวิวทีละ task และการรีวิวรอบสุดท้ายของเฟส 1 ผู้รีวิวรอบสุดท้ายประเมินแล้วว่า**ไม่มีข้อไหนต้องแก้ก่อน merge**
 
 ## ต้องตัดสินใจตอนเริ่มเฟส 2
-- **รูปจาก `/uploads` ข้าม origin:** helmet ตั้ง `Cross-Origin-Resource-Policy: same-origin` ทำให้ `<img>` บน `localhost:5173` โหลดรูปจาก `localhost:3000` ไม่ได้ แก้ได้สองทาง คือให้ Vite proxy path `/uploads` หรือตั้ง CORP เป็น `cross-origin` เฉพาะ route นี้
-- **ECONNRESET:** ถ้า server ปฏิเสธ multipart request ก่อนอ่าน body จบ (เช่น token หมดอายุระหว่างอัปโหลด) client อาจได้ error ECONNRESET แทน 401 ฝั่ง frontend ควรจัดการกรณีนี้ให้เหมาะ
+- [x] **เสร็จแล้ว (เฟส 2: Vite proxy ตอน dev และ nginx proxy ตอน Docker ทำให้ same-origin):** **รูปจาก `/uploads` ข้าม origin:** helmet ตั้ง `Cross-Origin-Resource-Policy: same-origin` ทำให้ `<img>` บน `localhost:5173` โหลดรูปจาก `localhost:3000` ไม่ได้ แก้ได้สองทาง คือให้ Vite proxy path `/uploads` หรือตั้ง CORP เป็น `cross-origin` เฉพาะ route นี้
+- [x] **เสร็จแล้ว (เฟส 2: api-client ของเว็บจัดเป็น `NETWORK_ERROR`):** **ECONNRESET:** ถ้า server ปฏิเสธ multipart request ก่อนอ่าน body จบ (เช่น token หมดอายุระหว่างอัปโหลด) client อาจได้ error ECONNRESET แทน 401 ฝั่ง frontend ควรจัดการกรณีนี้ให้เหมาะ
 
 ## ต้องทำตอน deploy (เฟส 4)
 - ตั้ง `trust proxy` ให้ rate limiter ของ login เมื่ออยู่หลัง reverse proxy

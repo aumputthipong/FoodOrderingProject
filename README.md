@@ -48,7 +48,7 @@ npm run serve
 
 ## Development (v2 – in progress)
 
-Backend ใหม่ (Express 5 + TypeScript + Drizzle + MySQL) เป็น pnpm monorepo อยู่ใน `apps/api` และ `packages/shared` — requires **Node ≥ 24**.
+Rebuild เป็น pnpm monorepo: `apps/api` (Express 5 + TypeScript + Drizzle + MySQL), `apps/web` (Vue 3 + Vite) และ `packages/shared` (Zod schema ที่ใช้ร่วมกัน) — requires **Node ≥ 24**.
 
 ### Option 1: Docker (ง่ายที่สุด)
 
@@ -56,6 +56,7 @@ Backend ใหม่ (Express 5 + TypeScript + Drizzle + MySQL) เป็น pnp
 docker compose up --build
 ```
 
+- เว็บ: http://localhost:8080 (nginx ให้บริการไฟล์ static และ proxy `/api`, `/uploads` ไปที่ API)
 - API: http://localhost:3000
 - API docs: http://localhost:3000/api/docs
 
@@ -70,10 +71,13 @@ pnpm db:reset
 pnpm dev
 ```
 
+`pnpm dev` เปิด API ที่ http://localhost:3000 และเว็บ (Vite) ที่ http://localhost:5173
+
 ```bash
 pnpm test        # ต้องมี db ที่รันอยู่ (canteen_test)
 pnpm lint
 pnpm typecheck
+pnpm build
 ```
 
 ### Demo accounts
