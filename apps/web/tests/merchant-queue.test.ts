@@ -1,9 +1,11 @@
 import type { ShopOrder } from '@canteen/shared'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { toast } from 'vue-sonner'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QUEUE_REFETCH_MS } from '@/features/orders'
+import { queryClient } from '@/lib/query-client'
+import { queryKeys } from '@/lib/query-keys'
 import { makeShop, makeShopOrder, makeUser } from './fixtures'
 import { mountApp } from './mount-app'
 import { server } from './msw/server'
@@ -122,10 +124,18 @@ test('a poll landing mid-toggle does not revert the tick (Review Focus 3)', asyn
 
 test('a failed toggle rolls back and shows a toast', async () => {
   const toastError = vi.spyOn(toast, 'error').mockImplementation(() => '')
+  let gets = 0
+  let releaseRefetch: () => void = () => {}
+  const refetchGate = new Promise<void>((resolve) => {
+    releaseRefetch = resolve
+  })
   server.use(
-    http.get('*/api/shops/mine/orders', () =>
-      HttpResponse.json({ waiting: [order()], finished: [] }),
-    ),
+    http.get('*/api/shops/mine/orders', async () => {
+      gets += 1
+      // hold the post-failure refetch so only onError's snapshot restore can uncheck the box
+      if (gets > 1) await refetchGate
+      return HttpResponse.json({ waiting: [order()], finished: [] })
+    }),
     http.patch('*/api/order-items/:id', () =>
       HttpResponse.json({ message: 'boom' }, { status: 500 }),
     ),
@@ -134,9 +144,58 @@ test('a failed toggle rolls back and shows a toast', async () => {
   await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
   await checkbox(wrapper, 'ข้าวมันไก่').trigger('click')
   await vi.waitFor(() => expect(toastError).toHaveBeenCalled())
-  await vi.waitFor(() =>
-    expect(checkbox(wrapper, 'ข้าวมันไก่').attributes('aria-checked')).toBe('false'),
+  await vi.waitFor(() => expect(gets).toBe(2))
+  expect(checkbox(wrapper, 'ข้าวมันไก่').attributes('aria-checked')).toBe('false')
+  releaseRefetch()
+  wrapper.unmount()
+})
+
+test('polling keeps running after a toggle settles', async () => {
+  const gets = vi.fn()
+  server.use(
+    http.get('*/api/shops/mine/orders', () => {
+      gets()
+      return HttpResponse.json({ waiting: [order()], finished: [] })
+    }),
+    http.patch('*/api/order-items/:id', () => HttpResponse.json(item(7, 'ข้าวมันไก่', true))),
   )
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
+  await checkbox(wrapper, 'ข้าวมันไก่').trigger('click')
+  // the settle refetch
+  await vi.waitFor(() => expect(gets).toHaveBeenCalledTimes(2))
+  await vi.advanceTimersByTimeAsync(QUEUE_REFETCH_MS + 500)
+  await vi.waitFor(() => expect(gets).toHaveBeenCalledTimes(3))
+  await vi.advanceTimersByTimeAsync(QUEUE_REFETCH_MS)
+  await vi.waitFor(() => expect(gets).toHaveBeenCalledTimes(4))
+  wrapper.unmount()
+})
+
+test('a refetch landing mid-PATCH with stale data does not uncheck the box', async () => {
+  let release: () => void = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({ waiting: [order()], finished: [] }),
+    ),
+    http.patch('*/api/order-items/:id', async () => {
+      await gate
+      return HttpResponse.json(item(7, 'ข้าวมันไก่', true))
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
+  await checkbox(wrapper, 'ข้าวมันไก่').trigger('click')
+  await vi.waitFor(() =>
+    expect(checkbox(wrapper, 'ข้าวมันไก่').attributes('aria-checked')).toBe('true'),
+  )
+  await queryClient.refetchQueries({ queryKey: queryKeys.orders.shop })
+  await flushPromises()
+  expect(checkbox(wrapper, 'ข้าวมันไก่').attributes('aria-checked')).toBe('true')
+  release()
   wrapper.unmount()
 })
 

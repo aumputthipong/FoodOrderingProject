@@ -1,5 +1,5 @@
 import type { OrderStatus, ShopOrder, ShopOrderList } from '@canteen/shared'
-import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import { QUEUE_REFETCH_MS } from '@/features/orders'
 import { errorMessage } from '@/lib/error-messages'
@@ -9,12 +9,19 @@ import { getShopOrders, setOrderItemDone, setOrderStatus } from './api'
 const TOGGLE_KEY = ['orders', 'shop', 'toggle'] as const
 
 export function useShopOrdersQuery() {
-  const toggling = useIsMutating({ mutationKey: TOGGLE_KEY })
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: queryKeys.orders.shop,
-    queryFn: getShopOrders,
-    // a poll that starts while a tick is in flight would return pre-tick data and revert it
-    refetchInterval: () => (toggling.value > 0 ? false : QUEUE_REFETCH_MS),
+    queryFn: async () => {
+      const fetched = await getShopOrders()
+      // a response that lands while a tick is in flight predates it (poll, focus or an earlier
+      // toggle's refetch), so keep the optimistic cache instead of reverting the tick
+      if (queryClient.isMutating({ mutationKey: TOGGLE_KEY }) > 0) {
+        return queryClient.getQueryData<ShopOrderList>(queryKeys.orders.shop) ?? fetched
+      }
+      return fetched
+    },
+    refetchInterval: QUEUE_REFETCH_MS,
     refetchOnWindowFocus: true,
   })
 }
@@ -49,7 +56,10 @@ export function useToggleOrderItemMutation() {
       if (context?.snapshot) queryClient.setQueryData(queryKeys.orders.shop, context.snapshot)
       toast.error(errorMessage(error))
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.orders.shop }),
+    // not returned: the mutation must be settled when this refetch lands, or it is discarded
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orders.shop })
+    },
   })
 }
 
