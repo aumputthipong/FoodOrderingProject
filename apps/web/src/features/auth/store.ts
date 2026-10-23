@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
     initPromise ??= (async () => {
       if (!getToken()) return
       try {
-        user.value = await authApi.fetchMe()
+        user.value = await authApi.fetchMe({ authRedirect: false })
       } catch (error) {
         if (isApiError(error) && error.status === 401) clearSession()
         else user.value = null

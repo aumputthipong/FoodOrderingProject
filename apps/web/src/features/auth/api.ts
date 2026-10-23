@@ -21,8 +21,8 @@ export function signup(input: SignupInput): Promise<User> {
   return api.post('/api/auth/signup', { schema: userSchema, body: input })
 }
 
-export function fetchMe(): Promise<User> {
-  return api.get('/api/auth/me', { schema: userSchema })
+export function fetchMe(options: { authRedirect?: boolean } = {}): Promise<User> {
+  return api.get('/api/auth/me', { schema: userSchema, authRedirect: options.authRedirect })
 }
 
 export async function logout(): Promise<void> {
