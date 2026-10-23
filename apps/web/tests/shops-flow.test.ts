@@ -1,0 +1,133 @@
+import { http, HttpResponse } from 'msw'
+import { expect, test, vi } from 'vitest'
+import { makeProduct, makeShop, makeShopDetail, makeUser } from './fixtures'
+import { mountApp } from './mount-app'
+import { server } from './msw/server'
+
+function trackSearch(): { last: () => string | null } {
+  let last: string | null = null
+  server.use(
+    http.get('*/api/shops', ({ request }) => {
+      last = new URL(request.url).searchParams.get('search')
+      return HttpResponse.json([makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
+    }),
+  )
+  return { last: () => last }
+}
+
+test('home lists shops and links to each shop', async () => {
+  const { wrapper } = await mountApp({ path: '/' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว'))
+  expect(wrapper.text()).toContain('สั่งก่อน รับก่อน')
+  expect(wrapper.text()).toContain('ร้านในโรงอาหาร')
+  expect(wrapper.text()).toContain('2 ร้าน')
+  expect(wrapper.find('a[href="/shops/1"]').exists()).toBe(true)
+  expect(wrapper.find('a[href="/shops/2"]').exists()).toBe(true)
+})
+
+test('typing in search updates ?q= and requests ?search=', async () => {
+  const search = trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  await wrapper.get('input[type="search"]').setValue('ก๋วย')
+  expect(router.currentRoute.value.query.q).toBeUndefined()
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
+  await vi.waitFor(() => expect(search.last()).toBe('ก๋วย'))
+  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+})
+
+test('initial search value comes from ?q=', async () => {
+  const search = trackSearch()
+  const { wrapper } = await mountApp({ path: '/?q=ก๋วย' })
+  expect((wrapper.get('input[type="search"]').element as HTMLInputElement).value).toBe('ก๋วย')
+  await vi.waitFor(() => expect(search.last()).toBe('ก๋วย'))
+})
+
+test('no results shows the empty state', async () => {
+  server.use(http.get('*/api/shops', () => HttpResponse.json([])))
+  const { wrapper } = await mountApp({ path: '/?q=zzz' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+})
+
+test('no shops at all shows the empty canteen state', async () => {
+  server.use(http.get('*/api/shops', () => HttpResponse.json([])))
+  const { wrapper } = await mountApp({ path: '/' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีร้านในโรงอาหาร'))
+})
+
+test('shop page shows menu and marks not-available items', async () => {
+  server.use(
+    http.get('*/api/shops/3', () =>
+      HttpResponse.json(
+        makeShopDetail({
+          id: 3,
+          name: 'ร้านข้าวแกง',
+          products: [
+            makeProduct({ id: 1, name: 'แกงเขียวหวาน', price: 60 }),
+            makeProduct({ id: 2, name: 'แกงส้ม', status: 'not-available' }),
+          ],
+        }),
+      ),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/3' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
+  expect(wrapper.text()).toContain('ร้านข้าวแกง')
+  expect(wrapper.text()).toContain('เมนู')
+  expect(wrapper.text()).toContain('฿60')
+  expect(wrapper.text()).toContain('แกงส้ม')
+  expect(wrapper.text().match(/หมดชั่วคราว/g)).toHaveLength(1)
+})
+
+test('shop with no products shows "ร้านนี้ยังไม่มีเมนู"', async () => {
+  server.use(
+    http.get('*/api/shops/4', () => HttpResponse.json(makeShopDetail({ id: 4, products: [] }))),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/4' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านนี้ยังไม่มีเมนู'))
+})
+
+test('/shops/9999 (API 404) shows Not Found', async () => {
+  server.use(
+    http.get('*/api/shops/9999', () =>
+      HttpResponse.json({ error: { code: 'NOT_FOUND', message: 'x' } }, { status: 404 }),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/9999' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+})
+
+test('/shops/abc shows Not Found without calling the API', async () => {
+  const calls = vi.fn()
+  server.use(
+    http.get('*/api/shops/:id', () => {
+      calls()
+      return HttpResponse.json({})
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/abc' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+  expect(calls).not.toHaveBeenCalled()
+})
+
+test('shop request failure shows an error with retry', async () => {
+  server.use(http.get('*/api/shops/5', () => HttpResponse.json({}, { status: 500 })))
+  const { wrapper } = await mountApp({ path: '/shops/5' })
+  await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true), {
+    timeout: 3000,
+  })
+})
+
+test('merchant layout shows the shop name', async () => {
+  server.use(
+    http.get('*/api/shops/7', () =>
+      HttpResponse.json(makeShopDetail({ id: 7, name: 'ร้านของฉัน' })),
+    ),
+  )
+  const { wrapper } = await mountApp({
+    path: '/merchant/queue',
+    user: makeUser({ role: 'merchant', shopId: 7 }),
+  })
+  await vi.waitFor(() =>
+    expect(wrapper.get('[data-testid="merchant-sidebar"]').text()).toContain('ร้านของฉัน'),
+  )
+})

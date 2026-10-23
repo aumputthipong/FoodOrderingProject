@@ -26,13 +26,13 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
-    component: placeholder,
+    component: () => import('@/features/shops/pages/HomePage.vue'),
     meta: { layout: 'customer', title: 'หน้าแรก' },
   },
   {
     path: '/shops/:id',
     name: 'shop',
-    component: placeholder,
+    component: () => import('@/features/shops/pages/ShopPage.vue'),
     meta: { layout: 'customer', title: 'หน้าร้าน' },
   },
   {

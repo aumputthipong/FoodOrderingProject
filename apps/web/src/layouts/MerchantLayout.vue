@@ -2,15 +2,17 @@
 import { House } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
+import { useShopQuery } from '@/features/shops'
 import MerchantSidebar from '@/features/merchant/components/MerchantSidebar.vue'
 import { merchantLinks } from '@/features/merchant/nav'
 
 const auth = useAuthStore()
+const { data: shop } = useShopQuery(() => auth.user?.shopId ?? null)
 </script>
 
 <template>
   <div class="flex min-h-dvh bg-background">
-    <MerchantSidebar :shop-name="null" :username="auth.user?.username ?? ''" />
+    <MerchantSidebar :shop-name="shop?.name ?? null" :username="auth.user?.username ?? ''" />
     <div class="flex min-w-0 flex-1 flex-col">
       <nav
         aria-label="เมนูร้าน"
