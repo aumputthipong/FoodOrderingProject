@@ -4,7 +4,6 @@ import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     layout: 'customer' | 'merchant' | 'auth'
-    title?: string
     requiresAuth?: boolean
     guestOnly?: boolean
     roles?: Role[]
@@ -24,80 +23,80 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'home',
     component: () => import('@/features/shops/pages/HomePage.vue'),
-    meta: { layout: 'customer', title: 'หน้าแรก' },
+    meta: { layout: 'customer' },
   },
   {
     path: '/shops/:id',
     name: 'shop',
     component: () => import('@/features/shops/pages/ShopPage.vue'),
-    meta: { layout: 'customer', title: 'หน้าร้าน' },
+    meta: { layout: 'customer' },
   },
   {
     path: '/cart',
     name: 'cart',
     component: () => import('@/features/cart/pages/CartPage.vue'),
-    meta: { layout: 'customer', requiresAuth: true, title: 'ตะกร้า' },
+    meta: { layout: 'customer', requiresAuth: true },
   },
   {
     path: '/orders',
     name: 'orders',
     component: () => import('@/features/orders/pages/MyOrdersPage.vue'),
-    meta: { layout: 'customer', requiresAuth: true, title: 'คิวของฉัน' },
+    meta: { layout: 'customer', requiresAuth: true },
   },
   {
     path: '/account',
     name: 'account',
     component: () => import('@/features/auth/pages/AccountPage.vue'),
-    meta: { layout: 'customer', requiresAuth: true, title: 'บัญชี' },
+    meta: { layout: 'customer', requiresAuth: true },
   },
   {
     path: '/login',
     name: 'login',
     component: () => import('@/features/auth/pages/LoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, title: 'เข้าสู่ระบบ' },
+    meta: { layout: 'auth', guestOnly: true },
   },
   {
     path: '/signup',
     name: 'signup',
     component: () => import('@/features/auth/pages/SignupPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, title: 'สมัครสมาชิก' },
+    meta: { layout: 'auth', guestOnly: true },
   },
   { path: '/merchant', redirect: { name: 'merchant-queue' } },
   {
     path: '/merchant/queue',
     name: 'merchant-queue',
     component: () => import('@/features/merchant/pages/QueuePage.vue'),
-    meta: { ...merchantMeta, requiresShop: true, title: 'คิวออเดอร์' },
+    meta: { ...merchantMeta, requiresShop: true },
   },
   {
     path: '/merchant/menu',
     name: 'merchant-menu',
     component: () => import('@/features/merchant/pages/MenuPage.vue'),
-    meta: { ...merchantMeta, requiresShop: true, title: 'เมนูในร้าน' },
+    meta: { ...merchantMeta, requiresShop: true },
   },
   {
     path: '/merchant/menu/new',
     name: 'merchant-menu-new',
     component: () => import('@/features/merchant/pages/ProductEditPage.vue'),
-    meta: { ...merchantMeta, requiresShop: true, title: 'เพิ่มเมนู' },
+    meta: { ...merchantMeta, requiresShop: true },
   },
   {
     path: '/merchant/menu/:id/edit',
     name: 'merchant-menu-edit',
     component: () => import('@/features/merchant/pages/ProductEditPage.vue'),
-    meta: { ...merchantMeta, requiresShop: true, title: 'แก้ไขเมนู' },
+    meta: { ...merchantMeta, requiresShop: true },
   },
   {
     path: '/merchant/shop',
     name: 'merchant-shop',
     component: () => import('@/features/merchant/pages/ShopEditPage.vue'),
-    meta: { ...merchantMeta, requiresShop: true, title: 'ข้อมูลร้าน' },
+    meta: { ...merchantMeta, requiresShop: true },
   },
   {
     path: '/merchant/shop/new',
     name: 'merchant-shop-new',
     component: () => import('@/features/merchant/pages/ShopCreatePage.vue'),
-    meta: { ...merchantMeta, requiresNoShop: true, title: 'สร้างร้าน' },
+    meta: { ...merchantMeta, requiresNoShop: true },
   },
   {
     path: '/:pathMatch(.*)*',
