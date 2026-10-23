@@ -25,6 +25,32 @@ test('maps multer size errors to VALIDATION_ERROR', () => {
   )
 })
 
+/** Shaped like the http-errors that body-parser passes to next(). */
+function httpError(status: number, type: string, message: string, expose = status < 500) {
+  return Object.assign(new Error(message), { status, statusCode: status, expose, type })
+}
+
+test('maps exposed 4xx http-errors (body-parser) to their status with VALIDATION_ERROR', () => {
+  expect(toErrorResponse(httpError(413, 'entity.too.large', 'request entity too large'))).toEqual({
+    status: 413,
+    body: { error: { code: 'VALIDATION_ERROR', message: 'Request body too large' } },
+  })
+  expect(
+    toErrorResponse(httpError(415, 'charset.unsupported', 'unsupported charset "LATIN1"')),
+  ).toEqual({
+    status: 415,
+    body: { error: { code: 'VALIDATION_ERROR', message: 'unsupported charset "LATIN1"' } },
+  })
+})
+
+test('does not trust http-errors that are not exposed 4xx', () => {
+  expect(toErrorResponse(httpError(500, 'x', 'secret')).status).toBe(500)
+  expect(toErrorResponse(httpError(400, 'x', 'secret', false)).status).toBe(500)
+  expect(
+    toErrorResponse(Object.assign(new Error('x'), { status: '413', expose: true })).status,
+  ).toBe(500)
+})
+
 test('hides internals of unexpected errors', () => {
   const { status, body } = toErrorResponse(new Error('ER_NO_SUCH_TABLE select * from x'))
   expect(status).toBe(500)

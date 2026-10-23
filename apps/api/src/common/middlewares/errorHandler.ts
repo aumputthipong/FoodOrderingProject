@@ -49,10 +49,33 @@ export function toErrorResponse(err: unknown): { status: number; body: ErrorResp
       body: { error: { code: 'VALIDATION_ERROR', message: 'Malformed JSON body' } },
     }
   }
+  const clientError = exposedClientError(err)
+  if (clientError) {
+    // 413, 415 and other 4xx from body-parser. The code set has no dedicated code for them, and
+    // they are all problems with the request as sent.
+    const message = clientError.status === 413 ? 'Request body too large' : clientError.message
+    return { status: clientError.status, body: { error: { code: 'VALIDATION_ERROR', message } } }
+  }
   return {
     status: 500,
     body: { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
   }
+}
+
+/**
+ * An http-errors error (as body-parser throws) with a 4xx status whose message is marked safe to
+ * show (`expose: true`); null for anything else.
+ */
+function exposedClientError(err: unknown): { status: number; message: string } | null {
+  if (!(err instanceof Error)) return null
+  const { status, statusCode, expose } = err as {
+    status?: unknown
+    statusCode?: unknown
+    expose?: unknown
+  }
+  const code = typeof status === 'number' ? status : statusCode
+  if (expose !== true || typeof code !== 'number' || !Number.isInteger(code)) return null
+  return code >= 400 && code < 500 ? { status: code, message: err.message } : null
 }
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {

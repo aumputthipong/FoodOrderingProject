@@ -32,6 +32,27 @@ test('malformed JSON body returns VALIDATION_ERROR', async () => {
   expect(res.body.error.code).toBe('VALIDATION_ERROR')
 })
 
+test('JSON body over the 100 kB limit is a 413 with the standard error shape', async () => {
+  const res = await api()
+    .post('/api/auth/login')
+    .set('Content-Type', 'application/json')
+    .send(JSON.stringify({ username: 'x'.repeat(200_000), password: 'y' }))
+  expect(res.status).toBe(413)
+  expect(res.body).toEqual({
+    error: { code: 'VALIDATION_ERROR', message: 'Request body too large' },
+  })
+})
+
+test('JSON body in an unsupported charset is a 415 with the standard error shape', async () => {
+  const res = await api()
+    .post('/api/auth/login')
+    .set('Content-Type', 'application/json; charset=latin1')
+    .send('{"username":"a","password":"b"}')
+  expect(res.status).toBe(415)
+  expect(res.body.error.code).toBe('VALIDATION_ERROR')
+  expect(typeof res.body.error.message).toBe('string')
+})
+
 test('errorHandler turns unexpected errors into 500 without req.log', async () => {
   const app = express()
     .get('/boom', () => {
