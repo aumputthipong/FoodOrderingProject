@@ -31,7 +31,7 @@ const emit = defineEmits<{ change: [quantity: number] }>()
         <PriceTag :value="product.price" class="text-[15px]" />
         <span
           v-if="product.status === 'not-available'"
-          class="rounded-md bg-border px-2 py-0.5 text-xs font-semibold text-stone-700"
+          class="rounded-md bg-border px-2 py-0.5 text-xs font-semibold text-foreground"
           >หมดชั่วคราว</span
         >
         <QuantityStepper

@@ -6,6 +6,13 @@ export const ACCEPTED_IMAGE_TYPES = [
   'image/avif',
   'image/gif',
 ]
+
+const DEFAULT_MAX_MB = 5
+
+function defaultMaxMb(): number {
+  const configured = Number(import.meta.env.VITE_UPLOAD_MAX_MB)
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_MB
+}
 </script>
 
 <script setup lang="ts">
@@ -26,7 +33,7 @@ const props = withDefaults(
     currentUrl: null,
     error: undefined,
     ratio: '16/9',
-    maxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 5),
+    maxMb: defaultMaxMb(),
   },
 )
 const emit = defineEmits<{

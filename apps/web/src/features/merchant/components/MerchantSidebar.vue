@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import AppLogo from '@/components/AppLogo.vue'
+import { Button } from '@/components/ui/button'
 import { merchantLinks } from '../nav'
 
 defineProps<{ shopName: string | null; username: string }>()
+defineEmits<{ logout: [] }>()
 </script>
 
 <template>
@@ -27,10 +29,11 @@ defineProps<{ shopName: string | null; username: string }>()
         v-for="link in merchantLinks"
         :key="link.name"
         :to="{ name: link.name }"
-        class="flex h-11 items-center rounded-[10px] px-3 text-stone-700"
+        class="flex h-11 items-center rounded-[10px] px-3 text-muted-foreground"
         active-class="bg-primary/10 font-semibold !text-primary"
         >{{ link.label }}</RouterLink
       >
     </nav>
+    <Button variant="outline" class="mt-auto" @click="$emit('logout')">ออกจากระบบ</Button>
   </aside>
 </template>

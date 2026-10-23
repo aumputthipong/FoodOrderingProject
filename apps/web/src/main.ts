@@ -25,4 +25,4 @@ app.config.errorHandler = (err) => {
   toast.error(errorMessage(err))
 }
 
-app.mount('#app')
+void router.isReady().then(() => app.mount('#app'))

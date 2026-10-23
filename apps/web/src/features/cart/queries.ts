@@ -43,7 +43,7 @@ export function useRemoveCartItemMutation() {
     mutationFn: (id: number) => removeCartItem(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cart }),
     onError: (error) => {
-      toast.error(errorMessage(error))
+      toast.error(cartErrorMessage(error))
     },
   })
 }

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
-import { useDebounceFn } from '@vueuse/core'
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import ErrorState from '@/components/ErrorState.vue'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,14 +22,29 @@ const input = ref(queryParam())
 const search = computed(() => queryParam().trim())
 const { data: shops, isPending, isError, error, refetch } = useShopsQuery(search)
 
-const syncUrl = useDebounceFn((value: string) => {
-  const trimmed = value.trim()
-  void router.replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
-}, SEARCH_DEBOUNCE_MS)
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelSync(): void {
+  if (syncTimer !== null) clearTimeout(syncTimer)
+  syncTimer = null
+}
+
+function syncUrl(value: string): void {
+  cancelSync()
+  syncTimer = setTimeout(() => {
+    syncTimer = null
+    const trimmed = value.trim()
+    void router.replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
+  }, SEARCH_DEBOUNCE_MS)
+}
+
+// a pending update must never stamp ?q= onto the page we are leaving for
+onBeforeRouteLeave(cancelSync)
+onBeforeUnmount(cancelSync)
 
 function onInput(event: Event): void {
   input.value = (event.target as HTMLInputElement).value
-  void syncUrl(input.value)
+  syncUrl(input.value)
 }
 </script>
 

@@ -95,9 +95,14 @@ export function useCreateShopMutation() {
   const auth = useAuthStore()
   return useMutation({
     mutationFn: (form: FormData) => createShop(form),
-    onSuccess: async () => {
+    onSuccess: async (shop) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.shops.all })
-      await auth.refreshMe()
+      try {
+        await auth.refreshMe()
+      } catch {
+        // the shop exists, so a failed /me must not fail the mutation: link it locally instead
+        if (auth.user) auth.user = { ...auth.user, shopId: shop.id }
+      }
     },
   })
 }

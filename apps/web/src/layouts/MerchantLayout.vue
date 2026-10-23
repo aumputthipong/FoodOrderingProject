@@ -1,18 +1,27 @@
 <script setup lang="ts">
 import { House } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
 import { useShopQuery } from '@/features/shops'
-import MerchantSidebar from '@/features/merchant/components/MerchantSidebar.vue'
-import { merchantLinks } from '@/features/merchant/nav'
+import { MerchantSidebar, merchantLinks } from '@/features/merchant'
 
 const auth = useAuthStore()
+const router = useRouter()
 const { data: shop } = useShopQuery(() => auth.user?.shopId ?? null)
+
+async function logout(): Promise<void> {
+  await auth.logout()
+  await router.replace({ name: 'home' })
+}
 </script>
 
 <template>
   <div class="flex min-h-dvh bg-background">
-    <MerchantSidebar :shop-name="shop?.name ?? null" :username="auth.user?.username ?? ''" />
+    <MerchantSidebar
+      :shop-name="shop?.name ?? null"
+      :username="auth.user?.username ?? ''"
+      @logout="logout"
+    />
     <div class="flex min-w-0 flex-1 flex-col">
       <nav
         aria-label="เมนูร้าน"
@@ -26,6 +35,13 @@ const { data: shop } = useShopQuery(() => auth.user?.shopId ?? null)
           active-class="font-semibold !text-primary"
           >{{ link.label }}</RouterLink
         >
+        <button
+          type="button"
+          class="ml-auto flex min-h-11 shrink-0 items-center px-3 text-sm text-muted-foreground"
+          @click="logout"
+        >
+          ออกจากระบบ
+        </button>
       </nav>
       <div class="flex justify-end px-4 pt-3 lg:px-8">
         <RouterLink

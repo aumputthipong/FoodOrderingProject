@@ -1,9 +1,12 @@
+import { enableAutoUnmount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { z } from 'zod'
 import { queryClient } from '@/lib/query-client'
 import { server } from './msw/server'
 
 z.config(z.locales.th())
+
+enableAutoUnmount(afterEach)
 
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })

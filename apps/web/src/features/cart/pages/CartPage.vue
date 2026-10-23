@@ -39,7 +39,7 @@ function onCheckout(cartId: number): void {
         >{{ carts.length }} ร้าน · แยกสั่งทีละร้าน</span
       >
     </header>
-    <ErrorState v-if="error" :error="error" @retry="refetch()" />
+    <ErrorState v-if="error && !carts" :error="error" @retry="refetch()" />
     <template v-else-if="isPending || !carts">
       <Skeleton class="h-48 w-full rounded-2xl" />
       <Skeleton class="h-48 w-full rounded-2xl" />

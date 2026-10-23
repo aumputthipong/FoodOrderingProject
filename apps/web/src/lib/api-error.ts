@@ -1,8 +1,8 @@
-import type { ErrorCode } from '@canteen/shared'
+import type { ErrorCode, ErrorResponse } from '@canteen/shared'
 
 export type ClientErrorCode = ErrorCode | 'NETWORK_ERROR' | 'INVALID_RESPONSE'
 
-export type ErrorDetail = { path: string; message: string }
+export type ErrorDetail = NonNullable<ErrorResponse['error']['details']>[number]
 
 export class ApiError extends Error {
   readonly status: number

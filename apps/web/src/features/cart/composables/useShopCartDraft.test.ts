@@ -33,11 +33,14 @@ function serverCart(quantity: number) {
   })
 }
 
-function setup(onError: (e: unknown) => void = () => {}) {
+function setup(
+  onError: (e: unknown) => void = () => {},
+  isAvailable?: (productId: number) => boolean,
+) {
   let draft!: ReturnType<typeof useShopCartDraft>
   const Host = defineComponent({
     setup() {
-      draft = useShopCartDraft(1, { onError })
+      draft = useShopCartDraft(1, { onError, isAvailable })
       return () => h('div')
     },
   })
@@ -243,16 +246,10 @@ test('a sold-out product in the server cart is left out of the payload and an in
   })
   server.use(http.get('*/api/cart', () => HttpResponse.json([existing])))
   const puts = trackPuts()
-  let draft!: ReturnType<typeof useShopCartDraft>
-  const Host = defineComponent({
-    setup() {
-      draft = useShopCartDraft(1, { isAvailable: (id) => id !== 2 })
-      return () => h('div')
-    },
-  })
-  const pinia = createPinia()
-  useAuthStore(pinia).user = makeUser()
-  mount(Host, { global: { plugins: [pinia, [VueQueryPlugin, { queryClient }]] } })
+  const draft = setup(
+    () => {},
+    (id) => id !== 2,
+  )
   await vi.waitFor(() => expect(draft.quantities.value).toEqual({ 1: 1, 2: 1 }))
   draft.setQuantity(1, 3)
   await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)

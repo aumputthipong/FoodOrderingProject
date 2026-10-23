@@ -248,3 +248,15 @@ test('navigating between shops sends the unsent edit to the old shop only', asyn
   ])
   expect(wrapper.get('[data-testid="cart-bar"]').text()).toContain('฿120')
 })
+
+test('navigating to a shop within the search debounce never stamps ?q= onto the shop page', async () => {
+  trackSearch()
+  server.use(http.get('*/api/shops/:id', () => HttpResponse.json(makeShopDetail({ id: 1 }))))
+  const { wrapper, router } = await mountApp({ path: '/' })
+  await vi.waitFor(() => expect(wrapper.find('a[href="/shops/1"]').exists()).toBe(true))
+  await wrapper.get('input[type="search"]').setValue('ก๋วย')
+  await router.push('/shops/1')
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  expect(router.currentRoute.value.fullPath).toBe('/shops/1')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ข้าวมันไก่'))
+})

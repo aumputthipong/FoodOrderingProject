@@ -18,7 +18,7 @@ const finished = computed(() => props.order.status === 'finished')
 </script>
 
 <template>
-  <article class="rounded-[18px] bg-card shadow-[0_4px_16px_rgba(28,25,23,0.06)]">
+  <article class="rounded-[18px] bg-card shadow-sm">
     <div class="flex items-start justify-between gap-3 px-[18px] pb-4 pt-[18px]">
       <div class="flex min-w-0 flex-col gap-0.5">
         <span class="text-[13px] text-muted-foreground">หมายเลขคิว</span>
@@ -78,7 +78,7 @@ const finished = computed(() => props.order.status === 'finished')
           </span>
           <span
             v-else
-            class="size-[22px] flex-none rounded-full border-2 border-stone-300"
+            class="size-[22px] flex-none rounded-full border-2 border-input"
             aria-hidden="true"
           ></span>
           <span class="flex-1">{{ item.name }} × {{ item.quantity }}</span>

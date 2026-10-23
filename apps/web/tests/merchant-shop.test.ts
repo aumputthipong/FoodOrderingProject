@@ -268,3 +268,26 @@ test('editing an unknown product id shows Not Found', async () => {
   await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
   wrapper.unmount()
 })
+
+test('creating a shop still succeeds and navigates when refreshing /me fails afterwards', async () => {
+  const success = vi.spyOn(toast, 'success')
+  server.use(
+    http.get('*/api/shops/:id', () => HttpResponse.json(makeShopDetail({ id: 7 }))),
+    http.get('*/api/shops/mine/orders', () => HttpResponse.json({ waiting: [], finished: [] })),
+    http.post('*/api/shops', () => {
+      server.use(http.get('*/api/auth/me', () => HttpResponse.error()))
+      return HttpResponse.json(makeShop({ id: 7 }), { status: 201 })
+    }),
+  )
+  const { wrapper, router } = await mountApp({
+    path: '/merchant/shop/new',
+    user: makeUser({ id: 2, role: 'merchant', shopId: null }),
+  })
+  await inputByLabel(wrapper, 'ชื่อร้าน').setValue('ร้านใหม่')
+  await inputByLabel(wrapper, 'คำอธิบาย').setValue('อร่อยมาก')
+  await pickImage(wrapper, png())
+  await wrapper.find('form').trigger('submit')
+  await vi.waitFor(() => expect(success).toHaveBeenCalledWith('สร้างร้านแล้ว'))
+  expect(wrapper.text()).not.toContain('ข้อมูลไม่ถูกต้อง')
+  expect(router.currentRoute.value.name).not.toBe('merchant-shop-new')
+})

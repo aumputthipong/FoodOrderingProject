@@ -7,4 +7,6 @@ export {
   useToggleOrderItemMutation,
   useUpdateShopMutation,
 } from './queries'
+export { default as MerchantSidebar } from './components/MerchantSidebar.vue'
+export { merchantLinks } from './nav'
 export { default as OrderCard } from './components/OrderCard.vue'

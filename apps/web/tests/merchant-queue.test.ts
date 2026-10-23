@@ -259,3 +259,15 @@ test('no orders shows the empty state', async () => {
   await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีออเดอร์'))
   wrapper.unmount()
 })
+
+test('logout in the merchant layout clears the session and goes to the customer home', async () => {
+  server.use(
+    http.get('*/api/shops/mine/orders', () => HttpResponse.json({ waiting: [], finished: [] })),
+    http.post('*/api/auth/logout', () => HttpResponse.json(null)),
+  )
+  const { wrapper, router } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีออเดอร์'))
+  await wrapper.get('[data-testid="merchant-sidebar"]').find('button').trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+  expect(localStorage.getItem('token')).toBeNull()
+})
