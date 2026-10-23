@@ -7,6 +7,16 @@ import * as repo from './cart.repository'
 
 const ITEM_NOT_FOUND = 'Cart item not found'
 
+/**
+ * Cart writes run at READ COMMITTED. Under REPEATABLE READ the DELETE of a new (still empty)
+ * cart's items takes a gap lock on `cart_items(cart_id, ...)` that other carts' transactions
+ * share, and their INSERTs then wait on each other: a deadlock on concurrent first add-to-carts.
+ * READ COMMITTED takes no such gap locks. Each transaction locks its cart row first
+ * (`FOR UPDATE`), so writers of one cart are serialized, and every later read is either a locking
+ * (current) read or a plain read that sees what was committed plus the transaction's own writes.
+ */
+const CART_TX = { isolationLevel: 'read committed' } as const
+
 export type CheckoutCart = {
   id: number
   shopId: number
@@ -39,14 +49,14 @@ export async function replaceCartItems(
   }
 
   return withTransaction(async (tx) => {
-    // Lock first: under REPEATABLE READ the first plain read fixes the snapshot, and it must not
-    // predate the wait for a concurrent replacement of the same cart.
+    // Lock first: everything below then runs after a concurrent replacement of the same cart has
+    // committed, and replaces what it left behind.
     const cartId = await repo.upsertCart(userId, shopId, tx)
     await assertAllAvailable(shopId, items, tx)
     await repo.deleteItemsByCartId(cartId, tx)
     await repo.insertItems(cartId, items, tx)
     return loadCart(cartId, tx)
-  })
+  }, CART_TX)
 }
 
 export async function updateCartItem(
@@ -77,7 +87,7 @@ export async function removeCartItem(userId: number, itemId: number): Promise<vo
     if ((await repo.deleteItem(owned.id, tx)) === 0) throw new NotFoundError(ITEM_NOT_FOUND)
     if ((await repo.countItemsForUpdate(owned.cartId, tx)) === 0)
       await repo.deleteCart(owned.cartId, tx)
-  })
+  }, CART_TX)
 }
 
 /**

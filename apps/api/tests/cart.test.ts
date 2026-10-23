@@ -332,8 +332,63 @@ describe('checkout helpers', () => {
   })
 })
 
-describe('concurrency (REPEATABLE READ)', () => {
+describe('concurrency', () => {
   const ROUNDS = 6
+  const CUSTOMERS = 8
+
+  async function loginCustomers(count: number): Promise<string[]> {
+    return Promise.all(Array.from({ length: count }, async () => loginAs(await createUser())))
+  }
+
+  test('first-time PUTs by different customers for the same shop never deadlock', async () => {
+    const { shop, a, b } = await setup()
+    for (let round = 0; round < 3; round++) {
+      const tokens = await loginCustomers(CUSTOMERS)
+      const first = await Promise.all(
+        tokens.map((token) =>
+          putCart(token, shop.id, {
+            items: [
+              { productId: a.id, quantity: 1 },
+              { productId: b.id, quantity: 2 },
+            ],
+          }),
+        ),
+      )
+      expect(first.map((r) => r.status)).toEqual(tokens.map(() => 200))
+      const second = await Promise.all(
+        tokens.map((token) =>
+          putCart(token, shop.id, { items: [{ productId: b.id, quantity: 3 }] }),
+        ),
+      )
+      expect(second.map((r) => r.status)).toEqual(tokens.map(() => 200))
+      expect(second.every((r) => r.body.items.length === 1 && r.body.totalPrice === 165)).toBe(true)
+    }
+    expect(await db.select().from(carts)).toHaveLength(3 * CUSTOMERS)
+    expect(await db.select().from(cartItems)).toHaveLength(3 * CUSTOMERS)
+  })
+
+  test('first-time PUTs by different customers for different shops never deadlock', async () => {
+    const shopsWithProducts = await Promise.all(
+      Array.from({ length: CUSTOMERS }, async () => {
+        const { shop } = await createMerchantWithShop()
+        return { shop, product: await createProduct(shop.id, { price: 20 }) }
+      }),
+    )
+    for (let round = 0; round < 3; round++) {
+      const tokens = await loginCustomers(CUSTOMERS)
+      for (const quantity of [1, 4]) {
+        const results = await Promise.all(
+          tokens.map((token, i) => {
+            const { shop, product } = shopsWithProducts[i]!
+            return putCart(token, shop.id, { items: [{ productId: product.id, quantity }] })
+          }),
+        )
+        expect(results.map((r) => r.status)).toEqual(tokens.map(() => 200))
+        expect(results.every((r) => r.body.totalPrice === 20 * quantity)).toBe(true)
+      }
+    }
+    expect(await db.select().from(carts)).toHaveLength(3 * CUSTOMERS)
+  })
 
   test('two DELETEs of the last two items of one cart both succeed and remove the cart', async () => {
     for (let round = 0; round < ROUNDS; round++) {

@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
-import { db, withTransaction, type DbClient } from '../../src/db/client'
+import { db, MAX_TRANSACTION_ATTEMPTS, withTransaction, type DbClient } from '../../src/db/client'
 import { carts, cartItems, products, shops, users } from '../../src/db/schema'
 
 async function insertUserWith(client: DbClient, username = 'user1') {
@@ -105,4 +105,70 @@ test('withTransaction rolls back when the callback throws', async () => {
     }),
   ).rejects.toThrow('x')
   expect(await countUsers()).toBe(0)
+})
+
+/** Shaped like Drizzle's wrapper around a mysql2 deadlock error. */
+function deadlockError(): Error {
+  const driverError = Object.assign(new Error('Deadlock found when trying to get lock'), {
+    code: 'ER_LOCK_DEADLOCK',
+    errno: 1213,
+  })
+  return new Error('Failed query: insert ...', { cause: driverError })
+}
+
+test('withTransaction re-runs the whole transaction after a deadlock', async () => {
+  let attempts = 0
+  const result = await withTransaction(async (tx) => {
+    attempts += 1
+    await insertUserWith(tx)
+    if (attempts < MAX_TRANSACTION_ATTEMPTS) throw deadlockError()
+    return 'done'
+  })
+  expect(result).toBe('done')
+  expect(attempts).toBe(MAX_TRANSACTION_ATTEMPTS)
+  // The failed attempts were rolled back: only the last insert is left.
+  expect(await countUsers()).toBe(1)
+})
+
+test('withTransaction gives up after MAX_TRANSACTION_ATTEMPTS deadlocks', async () => {
+  let attempts = 0
+  const failing = withTransaction(async () => {
+    attempts += 1
+    throw deadlockError()
+  })
+  await expect(failing).rejects.toThrow('Failed query')
+  expect(attempts).toBe(MAX_TRANSACTION_ATTEMPTS)
+})
+
+test('withTransaction does not retry other errors', async () => {
+  let attempts = 0
+  const failing = withTransaction(async () => {
+    attempts += 1
+    throw new Error('boom')
+  })
+  await expect(failing).rejects.toThrow('boom')
+  expect(attempts).toBe(1)
+})
+
+test('withTransaction applies the requested isolation level to that transaction only', async () => {
+  const userId = await insertUserWith(db)
+  let version = 0
+  // True when a plain read inside the transaction sees a change committed meanwhile by another
+  // connection: READ COMMITTED does, REPEATABLE READ keeps its first snapshot.
+  const seesConcurrentCommit = async (tx: DbClient) => {
+    const read = async () =>
+      (await tx.select({ name: users.firstName }).from(users).where(eq(users.id, userId)))[0]?.name
+    const before = await read()
+    version += 1
+    await db
+      .update(users)
+      .set({ firstName: `Changed ${String(version)}` })
+      .where(eq(users.id, userId))
+    return (await read()) !== before
+  }
+  expect(await withTransaction(seesConcurrentCommit, { isolationLevel: 'read committed' })).toBe(
+    true,
+  )
+  // The level was for that one transaction: the next one is back to the default.
+  expect(await withTransaction(seesConcurrentCommit)).toBe(false)
 })
