@@ -92,6 +92,10 @@ test('shop with no products shows "ร้านนี้ยังไม่มี
   )
   const { wrapper } = await mountApp({ path: '/shops/4' })
   await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านนี้ยังไม่มีเมนู'))
+  expect(wrapper.text()).toContain('ลองดูร้านอื่นก่อนนะ')
+  const link = wrapper.findAll('a').find((a) => a.text() === 'ดูร้านทั้งหมด')
+  expect(link).toBeDefined()
+  expect(link!.attributes('href')).toBe('/')
 })
 
 test('/shops/9999 (API 404) shows Not Found', async () => {
@@ -101,7 +105,9 @@ test('/shops/9999 (API 404) shows Not Found', async () => {
     ),
   )
   const { wrapper } = await mountApp({ path: '/shops/9999' })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านนี้'))
+  expect(wrapper.text()).toContain('ดูร้านทั้งหมด')
+  expect(wrapper.text()).not.toContain('ไม่พบหน้าที่ค้นหา')
 })
 
 test('/shops/abc shows Not Found without calling the API', async () => {
@@ -113,7 +119,8 @@ test('/shops/abc shows Not Found without calling the API', async () => {
     }),
   )
   const { wrapper } = await mountApp({ path: '/shops/abc' })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านนี้'))
+  expect(wrapper.text()).toContain('ดูร้านทั้งหมด')
   expect(calls).not.toHaveBeenCalled()
 })
 
@@ -188,6 +195,10 @@ test('floating bar shows count and total after adding', async () => {
   expect(bar.text()).toContain('3')
   expect(bar.text()).toContain('฿165')
   expect(bar.attributes('href')).toBe('/cart')
+  expect(bar.classes()).toEqual(
+    expect.arrayContaining(['md:inset-x-auto', 'md:right-8', 'md:w-96', 'active:bg-primary/80']),
+  )
+  expect(bar.get('[data-testid="cart-count"]').classes()).toContain('text-caption')
   await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1))
 })
 
@@ -399,5 +410,21 @@ test('search box wrapper shows a visible focus indicator', async () => {
   const { wrapper } = await mountApp({ path: '/' })
   expect(wrapper.get('input[type="search"]').element.parentElement?.className).toContain(
     'focus-within:outline-ring',
+  )
+})
+
+test('shop hero is capped on desktop and the cart bar is a floating box', async () => {
+  server.use(
+    http.get('*/api/shops/3', () =>
+      HttpResponse.json(
+        makeShopDetail({ id: 3, products: [makeProduct({ id: 1, name: 'แกงเขียวหวาน' })] }),
+      ),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/3' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
+  const hero = wrapper.get('[data-testid="shop-hero"]')
+  expect(hero.classes()).toEqual(
+    expect.arrayContaining(['md:h-72', 'md:overflow-hidden', 'md:rounded-b-3xl']),
   )
 })
