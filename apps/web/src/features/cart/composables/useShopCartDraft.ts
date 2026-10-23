@@ -24,10 +24,11 @@ export function useShopCartDraft(
   let inFlight = false
   let waiting = false
   let timer: ReturnType<typeof setTimeout> | null = null
-  let draftShopId = toValue(shopId)
+  // the shop is fixed for the lifetime of this instance (the page is keyed by route path)
+  const fixedShopId = toValue(shopId)
 
   function serverQuantities(): Record<number, number> {
-    const cart = carts.value?.find((c) => c.shop.id === toValue(shopId))
+    const cart = carts.value?.find((c) => c.shop.id === fixedShopId)
     return Object.fromEntries((cart?.items ?? []).map((item) => [item.productId, item.quantity]))
   }
 
@@ -49,7 +50,7 @@ export function useShopCartDraft(
       .filter((item) => item.quantity > 0)
       .sort((a, b) => a.productId - b.productId)
     try {
-      await replaceCartItems(draftShopId, items)
+      await replaceCartItems(fixedShopId, items)
     } catch (error) {
       clearTimer()
       dirty = false
@@ -72,28 +73,20 @@ export function useShopCartDraft(
     else void send()
   }
 
+  const ready = computed(() => carts.value !== undefined)
+
   function setQuantity(productId: number, quantity: number): void {
+    if (!ready.value) return
     const next = Math.min(MAX_QUANTITY, Math.max(0, Math.trunc(quantity)))
     const updated = { ...quantities.value, [productId]: next }
     if (next === 0) delete updated[productId]
     quantities.value = updated
-    draftShopId = toValue(shopId)
     dirty = true
     clearTimer()
     timer = setTimeout(flush, DEBOUNCE_MS)
   }
 
   watch(carts, syncFromServer, { immediate: true })
-  watch(
-    () => toValue(shopId),
-    () => {
-      if (dirty && !inFlight) {
-        clearTimer()
-        void send()
-      }
-      syncFromServer()
-    },
-  )
   onScopeDispose(() => {
     if (!dirty) return
     clearTimer()
@@ -102,5 +95,5 @@ export function useShopCartDraft(
 
   const itemCount = computed(() => Object.values(quantities.value).reduce((a, b) => a + b, 0))
 
-  return { quantities, setQuantity, itemCount }
+  return { quantities, setQuantity, itemCount, ready }
 }

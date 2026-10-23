@@ -23,7 +23,7 @@ const shopId = computed(() => {
 })
 const { data: shop, isPending, error, refetch } = useShopQuery(shopId)
 
-const { quantities, setQuantity, itemCount } = useShopCartDraft(() => shopId.value ?? 0)
+const { quantities, setQuantity, itemCount, ready } = useShopCartDraft(() => shopId.value ?? 0)
 
 function onChange(productId: number, quantity: number): void {
   if (!auth.isLoggedIn) {
@@ -78,6 +78,7 @@ const notFound = computed(
           :key="product.id"
           :product="product"
           :quantity="quantities[product.id] ?? 0"
+          :disabled="auth.isLoggedIn && !ready"
           @change="onChange(product.id, $event)"
         />
       </div>

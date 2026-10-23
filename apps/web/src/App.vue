@@ -14,7 +14,9 @@ const layout = computed(() => layouts[route.meta.layout ?? 'customer'])
 
 <template>
   <component :is="layout">
-    <RouterView />
+    <RouterView v-slot="{ Component, route: viewRoute }">
+      <component :is="Component" :key="viewRoute.path" />
+    </RouterView>
   </component>
   <Toaster rich-colors position="top-center" />
 </template>

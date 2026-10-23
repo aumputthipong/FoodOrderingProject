@@ -5,7 +5,7 @@ import PriceTag from '@/components/PriceTag.vue'
 import { cn } from '@/lib/utils'
 import QuantityStepper from './QuantityStepper.vue'
 
-defineProps<{ product: Product; quantity: number }>()
+defineProps<{ product: Product; quantity: number; disabled?: boolean }>()
 const emit = defineEmits<{ change: [quantity: number] }>()
 </script>
 
@@ -38,6 +38,7 @@ const emit = defineEmits<{ change: [quantity: number] }>()
           v-else
           :model-value="quantity"
           :label="product.name"
+          :disabled="disabled"
           @update:model-value="emit('change', $event)"
         />
       </div>

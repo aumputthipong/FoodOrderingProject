@@ -178,3 +178,48 @@ test('server data re-syncs when there are no local edits', async () => {
   await queryClient.invalidateQueries({ queryKey: ['cart'] })
   await vi.waitFor(() => expect(draft.quantities.value).toEqual({ 1: 4 }))
 })
+
+test('edits before the cart has loaded are ignored, then later edits keep the existing items', async () => {
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => (release = resolve))
+  const existing = makeCart({
+    id: 1,
+    shop: { id: 1, name: 'ร้านข้าวมันไก่', imageUrl: null },
+    items: [1, 2].map((productId) => ({
+      id: productId,
+      productId,
+      name: `เมนู ${productId}`,
+      imageUrl: null,
+      price: 50,
+      quantity: productId === 1 ? 2 : 1,
+      subtotal: productId === 1 ? 100 : 50,
+    })),
+    totalPrice: 150,
+  })
+  server.use(
+    http.get('*/api/cart', async () => {
+      await gate
+      return HttpResponse.json([existing])
+    }),
+  )
+  const puts = trackPuts()
+  const draft = setup()
+  await flushPromises()
+  expect(draft.ready.value).toBe(false)
+  draft.setQuantity(1, 5)
+  expect(draft.quantities.value).toEqual({})
+  await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)
+  expect(puts).toHaveLength(0)
+  release()
+  await vi.waitFor(() => expect(draft.ready.value).toBe(true))
+  await vi.waitFor(() => expect(draft.quantities.value).toEqual({ 1: 2, 2: 1 }))
+  draft.setQuantity(1, 3)
+  await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)
+  await vi.waitFor(() => expect(puts).toHaveLength(1))
+  expect(puts[0]).toEqual({
+    items: [
+      { productId: 1, quantity: 3 },
+      { productId: 2, quantity: 1 },
+    ],
+  })
+})

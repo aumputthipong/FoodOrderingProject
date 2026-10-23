@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { expect, test, vi } from 'vitest'
-import { makeProduct, makeShop, makeShopDetail, makeUser } from './fixtures'
+import { makeCart, makeProduct, makeShop, makeShopDetail, makeUser } from './fixtures'
 import { mountApp } from './mount-app'
 import { server } from './msw/server'
 
@@ -166,11 +166,18 @@ test('guest tapping + is sent to login with redirect back to the shop', async ()
 
 test('floating bar shows count and total after adding', async () => {
   mockShop3()
-  server.use(http.put('*/api/cart/shops/3/items', () => new HttpResponse(null, { status: 204 })))
+  const put = vi.fn()
+  server.use(
+    http.put('*/api/cart/shops/3/items', () => {
+      put()
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
   const { wrapper } = await mountApp({ path: '/shops/3', user: makeUser() })
   await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
   expect(wrapper.text()).not.toContain('ดูตะกร้า')
   const add = '[aria-label="เพิ่มจำนวน แกงเขียวหวาน"]'
+  await vi.waitFor(() => expect(wrapper.get(add).attributes('disabled')).toBeUndefined())
   await wrapper.get(add).trigger('click')
   await wrapper.get(add).trigger('click')
   await wrapper.get('[aria-label="เพิ่มจำนวน แกงส้ม"]').trigger('click')
@@ -179,4 +186,65 @@ test('floating bar shows count and total after adding', async () => {
   expect(bar.text()).toContain('3')
   expect(bar.text()).toContain('฿165')
   expect(bar.attributes('href')).toBe('/cart')
+  await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1))
+})
+
+test('navigating between shops sends the unsent edit to the old shop only', async () => {
+  const puts: { url: string; body: unknown }[] = []
+  server.use(
+    http.get('*/api/shops/1', () =>
+      HttpResponse.json(
+        makeShopDetail({
+          id: 1,
+          products: [makeProduct({ id: 10, shopId: 1, name: 'เมนูหนึ่ง', price: 50 })],
+        }),
+      ),
+    ),
+    http.get('*/api/shops/2', () =>
+      HttpResponse.json(
+        makeShopDetail({
+          id: 2,
+          products: [makeProduct({ id: 20, shopId: 2, name: 'เมนูสอง', price: 30 })],
+        }),
+      ),
+    ),
+    http.get('*/api/cart', () =>
+      HttpResponse.json([
+        makeCart({
+          id: 2,
+          shop: { id: 2, name: 'ร้านสอง', imageUrl: null },
+          items: [
+            {
+              id: 5,
+              productId: 20,
+              name: 'เมนูสอง',
+              imageUrl: null,
+              price: 30,
+              quantity: 4,
+              subtotal: 120,
+            },
+          ],
+          totalPrice: 120,
+        }),
+      ]),
+    ),
+    http.put('*/api/cart/shops/:shopId/items', async ({ request }) => {
+      puts.push({ url: new URL(request.url).pathname, body: await request.json() })
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  const { wrapper, router } = await mountApp({ path: '/shops/1', user: makeUser() })
+  const add = '[aria-label="เพิ่มจำนวน เมนูหนึ่ง"]'
+  await vi.waitFor(() => expect(wrapper.find(add).exists()).toBe(true))
+  await vi.waitFor(() => expect(wrapper.get(add).attributes('disabled')).toBeUndefined())
+  await wrapper.get(add).trigger('click')
+  await router.push('/shops/2')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('เมนูสอง'))
+  await vi.waitFor(() => expect(wrapper.find('[aria-label="ลดจำนวน เมนูสอง"]').exists()).toBe(true))
+  await vi.waitFor(() => expect(puts).toHaveLength(1))
+  await new Promise((resolve) => setTimeout(resolve, 400))
+  expect(puts).toEqual([
+    { url: '/api/cart/shops/1/items', body: { items: [{ productId: 10, quantity: 1 }] } },
+  ])
+  expect(wrapper.get('[data-testid="cart-bar"]').text()).toContain('฿120')
 })
