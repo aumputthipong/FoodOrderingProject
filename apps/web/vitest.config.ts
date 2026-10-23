@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    env: { TZ: 'Asia/Bangkok' },
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
   },
