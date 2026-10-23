@@ -1,16 +1,7 @@
 # CanteenFoodOrdering Web Application Project
 ## Web Programming Course Project in academic 2nd Year
-develope by using Vue.js Express.js and bulmaCSS with MySQL database  
+Canteen food ordering built with Vue 3, Express 5 and MySQL (pnpm monorepo). See [Development](#development) below to run it.
 
-## Project setup
-```bash
-npm install 
-```
-
-## Project start
-```bash
-npm run serve
-```
 ## 📖 Overview
 
 <table cellpadding="10" cellspacing="10">
@@ -45,3 +36,46 @@ npm run serve
     </td>
   </tr>
 </table>
+
+## Development
+
+Rebuild เป็น pnpm monorepo: `apps/api` (Express 5 + TypeScript + Drizzle + MySQL), `apps/web` (Vue 3 + Vite) และ `packages/shared` (Zod schema ที่ใช้ร่วมกัน) — requires **Node ≥ 24**.
+
+### Option 1: Docker (ง่ายที่สุด)
+
+```bash
+docker compose up --build
+```
+
+- เว็บ: http://localhost:8080 (nginx ให้บริการไฟล์ static และ proxy `/api`, `/uploads` ไปที่ API)
+- API: http://localhost:3000
+- API docs: http://localhost:3000/api/docs
+
+### Option 2: Dev flow
+
+```bash
+corepack enable
+pnpm install
+docker compose up -d db
+cp apps/api/.env.example apps/api/.env
+pnpm db:reset
+pnpm dev
+```
+
+`pnpm dev` เปิด API ที่ http://localhost:3000 และเว็บ (Vite) ที่ http://localhost:5173
+
+```bash
+pnpm test        # ต้องมี db ที่รันอยู่ (canteen_test)
+pnpm lint
+pnpm typecheck
+pnpm build
+```
+
+### Demo accounts
+
+`merchant1` – `merchant5` และ `customer1` — password: `Password123`
+
+### Notes
+
+- `docker/mysql/init.sql` (สร้างฐานข้อมูล `canteen_test`) รันเฉพาะตอน volume `db-data` ใหม่ — ถ้าต้องสร้างใหม่ใช้ `docker compose down -v`
+- ควร reset volume `db-data` และ `uploads` พร้อมกัน เพราะ seed จะคัดลอกรูปภาพเฉพาะตอนที่ seed ข้อมูลเท่านั้น
