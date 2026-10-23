@@ -20,8 +20,14 @@ const props = withDefaults(
     label: string
     error?: string
     maxMb?: number
+    ratio?: '16/10' | '1/1' | '16/9'
   }>(),
-  { currentUrl: null, error: undefined, maxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 5) },
+  {
+    currentUrl: null,
+    error: undefined,
+    ratio: '16/9',
+    maxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 5),
+  },
 )
 const emit = defineEmits<{
   'update:modelValue': [file: File | null]
@@ -76,7 +82,8 @@ function onChange(event: Event) {
   <div class="space-y-2">
     <label :for="inputId" class="text-sm font-medium text-foreground">{{ label }}</label>
     <div
-      class="flex aspect-video w-full max-w-sm items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10"
+      :style="{ aspectRatio: ratio }"
+      class="flex w-full max-w-sm items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10"
     >
       <img v-if="previewSrc" :src="previewSrc" alt="" class="size-full object-cover" />
       <ImagePlus v-else class="size-8 text-primary" aria-hidden="true" />

@@ -13,9 +13,6 @@ declare module 'vue-router' {
   }
 }
 
-// Pages that have not been built yet render the shared placeholder showing meta.title.
-const placeholder = () => import('@/pages/PlaceholderPage.vue')
-
 const merchantMeta: RouteMeta = {
   layout: 'merchant',
   requiresAuth: true,
@@ -75,31 +72,31 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/merchant/menu',
     name: 'merchant-menu',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/MenuPage.vue'),
     meta: { ...merchantMeta, requiresShop: true, title: 'เมนูในร้าน' },
   },
   {
     path: '/merchant/menu/new',
     name: 'merchant-menu-new',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/ProductEditPage.vue'),
     meta: { ...merchantMeta, requiresShop: true, title: 'เพิ่มเมนู' },
   },
   {
     path: '/merchant/menu/:id/edit',
     name: 'merchant-menu-edit',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/ProductEditPage.vue'),
     meta: { ...merchantMeta, requiresShop: true, title: 'แก้ไขเมนู' },
   },
   {
     path: '/merchant/shop',
     name: 'merchant-shop',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/ShopEditPage.vue'),
     meta: { ...merchantMeta, requiresShop: true, title: 'ข้อมูลร้าน' },
   },
   {
     path: '/merchant/shop/new',
     name: 'merchant-shop-new',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/ShopCreatePage.vue'),
     meta: { ...merchantMeta, requiresNoShop: true, title: 'สร้างร้าน' },
   },
   {
