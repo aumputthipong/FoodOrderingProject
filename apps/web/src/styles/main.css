@@ -35,6 +35,13 @@
 @theme inline {
   --font-sans: 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
   --font-heading: 'Prompt', 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+  --text-caption: 13px;
+  --text-body-sm: 15px;
+  --text-title: 20px;
+  --text-display: 26px;
+  --text-ticket: 44px;
+  --radius-card: 16px;
+  --radius-thumb: 10px;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -63,9 +70,30 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  :where(
+    a,
+    button,
+    input,
+    textarea,
+    [role='tab'],
+    [role='switch'],
+    [role='checkbox'],
+    [role='radio']
+  ):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
   body {
     @apply bg-background text-foreground font-sans;
   }
+}
+
+@utility page-title {
+  @apply font-heading text-title font-semibold;
+}
+
+@utility page-title-lg {
+  @apply font-heading text-display font-semibold;
 }
