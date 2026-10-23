@@ -14,8 +14,13 @@ function valueAt(values: unknown, path: PropertyKey[]): unknown {
   return current
 }
 
+function isEmptyValue(value: unknown): boolean {
+  return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
+}
+
 function isMissing(issue: z.core.$ZodIssue, values: unknown): boolean {
-  if (issue.code === 'invalid_type') return valueAt(values, issue.path) === undefined
+  if (issue.code !== 'invalid_type' && issue.code !== 'too_small') return false
+  if (isEmptyValue(valueAt(values, issue.path))) return true
   return issue.code === 'too_small' && issue.origin === 'string' && issue.minimum === 1
 }
 

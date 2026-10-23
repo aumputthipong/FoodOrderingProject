@@ -55,3 +55,24 @@ test('empty string on min(1) field is also กรุณากรอกข้อ�
   const r = await toFormSchema(shopFieldsSchema).parse({ name: '', description: 'x' })
   expect(r.errors).toContainEqual({ path: 'name', errors: ['กรุณากรอกข้อมูลนี้'] })
 })
+
+test('cleared price (empty string) says กรุณากรอกราคา', async () => {
+  const r = await toFormSchema(productFieldsSchema).parse({
+    name: 'a',
+    description: 'b',
+    price: '',
+  })
+  expect(r.errors).toContainEqual({ path: 'price', errors: ['กรุณากรอกราคา'] })
+})
+
+test('typed price 0 keeps the specific message', async () => {
+  const r = await toFormSchema(productFieldsSchema).parse({ name: 'a', description: 'b', price: 0 })
+  const entry = r.errors.find((e) => e.path === 'price')
+  expect(entry).toBeDefined()
+  expect(entry?.errors).not.toContain('กรุณากรอกราคา')
+})
+
+test('null text field reads as กรุณากรอกข้อมูลนี้', async () => {
+  const r = await toFormSchema(shopFieldsSchema).parse({ name: 'a', description: null } as never)
+  expect(r.errors).toContainEqual({ path: 'description', errors: ['กรุณากรอกข้อมูลนี้'] })
+})
