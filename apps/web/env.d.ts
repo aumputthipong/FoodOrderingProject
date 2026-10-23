@@ -8,6 +8,7 @@ declare module '*.vue' {
 
 interface ImportMetaEnv {
   readonly VITE_UPLOAD_MAX_MB?: string
+  readonly VITE_DEMO_HINT?: string
 }
 
 interface ImportMeta {

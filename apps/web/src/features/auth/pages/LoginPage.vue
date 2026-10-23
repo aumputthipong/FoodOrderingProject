@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Info } from '@lucide/vue'
 import { loginSchema } from '@canteen/shared'
 import { useForm } from 'vee-validate'
 import { computed, ref } from 'vue'
@@ -10,12 +11,16 @@ import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/error-messages'
 import { toFormSchema } from '@/lib/form-schema'
 import { useAuthStore } from '../index'
+import { isDemoHintEnabled } from '../demo-hint'
 import { homeFor, safeRedirect } from '../redirect'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const formError = ref<string | null>(null)
+
+const hasRedirect = computed(() => safeRedirect(route.query.redirect) !== null)
+const showDemoHint = computed(() => isDemoHintEnabled())
 
 const signupLink = computed(() => ({
   name: 'signup',
@@ -39,6 +44,7 @@ const onSubmit = handleSubmit(async (values) => {
   <Card>
     <CardHeader>
       <CardTitle class="font-heading text-xl">เข้าสู่ระบบ</CardTitle>
+      <p v-if="hasRedirect" class="text-body-sm text-muted-foreground">เข้าสู่ระบบเพื่อสั่งอาหาร</p>
     </CardHeader>
     <CardContent>
       <form class="grid gap-4" novalidate @submit="onSubmit">
@@ -79,6 +85,14 @@ const onSubmit = handleSubmit(async (values) => {
           </RouterLink>
         </p>
       </form>
+      <p
+        v-if="showDemoHint"
+        role="note"
+        class="mt-4 flex items-start gap-2 rounded-card bg-accent/20 p-3 text-body-sm"
+      >
+        <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>บัญชีทดลอง: customer1 (ลูกค้า) · merchant1 (ร้านค้า) · รหัสผ่าน Password123</span>
+      </p>
     </CardContent>
   </Card>
 </template>

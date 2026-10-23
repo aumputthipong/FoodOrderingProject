@@ -13,6 +13,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 COPY tsconfig.base.json ./
 COPY apps/web apps/web
 COPY packages/shared packages/shared
+ARG VITE_DEMO_HINT=
+ENV VITE_DEMO_HINT=$VITE_DEMO_HINT
 RUN pnpm --filter @canteen/web build
 
 FROM nginx:1.28-alpine AS runtime
