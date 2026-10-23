@@ -1,4 +1,4 @@
-import { productFieldsSchema, signupSchema } from '@canteen/shared'
+import { loginSchema, productFieldsSchema, shopFieldsSchema, signupSchema } from '@canteen/shared'
 import { toFormSchema } from './form-schema'
 
 const validSignup = {
@@ -39,4 +39,19 @@ test('groups several issues on the same path together', async () => {
   expect(entry?.errors).toContain('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
   expect(entry?.errors).toContain('รหัสผ่านต้องมีตัวพิมพ์ใหญ่')
   expect(entry?.errors).toContain('รหัสผ่านต้องมีตัวเลข')
+})
+
+test('empty required fields read as human Thai', async () => {
+  const r = await toFormSchema(loginSchema).parse({} as never)
+  expect(r.errors).toContainEqual({ path: 'username', errors: ['กรุณากรอกข้อมูลนี้'] })
+})
+
+test('empty price says กรุณากรอกราคา', async () => {
+  const r = await toFormSchema(productFieldsSchema).parse({ name: 'a', description: 'b' } as never)
+  expect(r.errors).toContainEqual({ path: 'price', errors: ['กรุณากรอกราคา'] })
+})
+
+test('empty string on min(1) field is also กรุณากรอกข้อมูลนี้', async () => {
+  const r = await toFormSchema(shopFieldsSchema).parse({ name: '', description: 'x' })
+  expect(r.errors).toContainEqual({ path: 'name', errors: ['กรุณากรอกข้อมูลนี้'] })
 })
