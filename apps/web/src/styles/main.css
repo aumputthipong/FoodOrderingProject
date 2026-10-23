@@ -18,10 +18,13 @@
   --popover-foreground: #1c1917;
   --primary: #c2410c;
   --primary-foreground: #ffffff;
+  --primary-hover: #a8380a;
+  --primary-active: #9a3412;
   --secondary: #e7e5e4;
   --secondary-foreground: #1c1917;
   --muted: #e7e5e4;
   --muted-foreground: #57534e;
+  --muted-active: #d6d3d1;
   --accent: #f5b83d;
   --accent-foreground: #1c1917;
   --destructive: #b91c1c;
@@ -54,10 +57,13 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-muted-active: var(--muted-active);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);

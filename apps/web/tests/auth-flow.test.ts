@@ -137,3 +137,37 @@ test('logout from account returns home and hides account links', async () => {
   await vi.waitFor(() => expect(wrapper.find('a[href="/login"]').exists()).toBe(true))
   expect(wrapper.text()).not.toContain('somchai')
 })
+
+test('account page shows initials and logs out from the account page', async () => {
+  server.use(http.post('*/api/auth/logout', () => new HttpResponse(null, { status: 204 })))
+  const { wrapper, router } = await mountApp({ path: '/account', user: makeUser() })
+  expect(wrapper.get('[data-testid="account-initial"]').text()).toBe('ส')
+  const button = wrapper.findAll('button').find((b) => b.text().includes('ออกจากระบบ'))
+  expect(button!.classes()).toContain('text-destructive')
+  await button!.trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+})
+
+test('account initial is uppercased for Latin names', async () => {
+  const { wrapper } = await mountApp({
+    path: '/account',
+    user: makeUser({ firstName: 'alice', lastName: 'Smith' }),
+  })
+  expect(wrapper.get('[data-testid="account-initial"]').text()).toBe('A')
+})
+
+test('desktop top nav shows the user chip linking to account and no logout button', async () => {
+  const { wrapper } = await mountApp({ path: '/', user: makeUser() })
+  const nav = wrapper.get('[data-testid="top-nav"]')
+  const chip = nav.get('a[href="/account"]')
+  expect(chip.text()).toContain('สมชาย')
+  expect(nav.text()).not.toContain('ออกจากระบบ')
+  expect(nav.findAll('button')).toHaveLength(0)
+})
+
+test('guests keep the login link in the top nav', async () => {
+  const { wrapper } = await mountApp({ path: '/' })
+  const nav = wrapper.get('[data-testid="top-nav"]')
+  expect(nav.get('a[href="/login"]').text()).toContain('เข้าสู่ระบบ')
+  expect(nav.find('a[href="/account"]').exists()).toBe(false)
+})

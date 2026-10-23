@@ -114,7 +114,7 @@ const notFound = computed(
       v-if="itemCount > 0"
       data-testid="cart-bar"
       :to="{ name: 'cart' }"
-      class="fixed inset-x-4 bottom-20 z-30 mx-auto flex min-h-14 max-w-5xl items-center justify-between gap-3 rounded-2xl bg-primary px-4 text-primary-foreground shadow-lg transition-colors hover:bg-primary/90 active:bg-primary/80 md:inset-x-auto md:bottom-6 md:right-8 md:mx-0 md:w-96"
+      class="fixed inset-x-4 bottom-20 z-30 mx-auto flex min-h-14 max-w-5xl items-center justify-between gap-3 rounded-2xl bg-primary px-4 text-primary-foreground shadow-lg transition-colors hover:bg-primary-hover active:bg-primary-active md:inset-x-auto md:bottom-6 md:right-8 md:mx-0 md:w-96"
     >
       <span class="flex items-center gap-3 font-semibold">
         <ShoppingCart class="size-5" aria-hidden="true" />

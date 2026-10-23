@@ -12,7 +12,9 @@ describe('buttonVariants', () => {
 
   test('default variant darkens on press without scaling', () => {
     const cls = buttonVariants()
-    expect(cls).toContain('active:bg-primary/80')
+    expect(cls).toContain('hover:bg-primary-hover')
+    expect(cls).toContain('active:bg-primary-active')
+    expect(cls).not.toMatch(/bg-primary\/\d/)
     expect(cls).toContain('transition-colors')
     expect(cls).not.toMatch(/scale/)
   })

@@ -196,7 +196,13 @@ test('floating bar shows count and total after adding', async () => {
   expect(bar.text()).toContain('฿165')
   expect(bar.attributes('href')).toBe('/cart')
   expect(bar.classes()).toEqual(
-    expect.arrayContaining(['md:inset-x-auto', 'md:right-8', 'md:w-96', 'active:bg-primary/80']),
+    expect.arrayContaining([
+      'md:inset-x-auto',
+      'md:right-8',
+      'md:w-96',
+      'hover:bg-primary-hover',
+      'active:bg-primary-active',
+    ]),
   )
   expect(bar.get('[data-testid="cart-count"]').classes()).toContain('text-caption')
   await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1))

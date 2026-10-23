@@ -27,7 +27,7 @@ const buttonClass = 'flex size-11 items-center justify-center rounded-full disab
         type="button"
         :disabled="disabled"
         :aria-label="`ลดจำนวน ${label}`"
-        :class="`${buttonClass} border border-border bg-card text-foreground transition-colors hover:bg-muted active:bg-muted/70`"
+        :class="`${buttonClass} border border-border bg-card text-foreground transition-colors hover:bg-muted active:bg-muted-active`"
         @click="change(-1)"
       >
         <Minus class="size-4" aria-hidden="true" />
@@ -40,7 +40,7 @@ const buttonClass = 'flex size-11 items-center justify-center rounded-full disab
       type="button"
       :disabled="disabled"
       :aria-label="`เพิ่มจำนวน ${label}`"
-      :class="`${buttonClass} bg-primary text-primary-foreground transition-colors hover:bg-primary/90 active:bg-primary/80`"
+      :class="`${buttonClass} bg-primary text-primary-foreground transition-colors hover:bg-primary-hover active:bg-primary-active`"
       @click="change(1)"
     >
       <Plus class="size-5" aria-hidden="true" />

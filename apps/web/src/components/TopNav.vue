@@ -3,11 +3,10 @@ import type { User } from '@canteen/shared'
 import { ShoppingCart } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import AppLogo from '@/components/AppLogo.vue'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 defineProps<{ cartCount: number; user: User | null }>()
-defineEmits<{ logout: [] }>()
 
 const linkClass =
   'flex min-h-11 items-center rounded-md px-3 text-sm text-muted-foreground hover:text-foreground'
@@ -40,14 +39,21 @@ const activeClass = 'font-semibold !text-primary'
         <ShoppingCart aria-hidden="true" />
         <span
           v-if="cartCount > 0"
-          class="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground"
+          class="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] text-primary-foreground"
           >{{ cartCount }}</span
         >
       </RouterLink>
-      <template v-if="user">
-        <RouterLink :to="{ name: 'account' }" :class="linkClass">{{ user.firstName }}</RouterLink>
-        <Button variant="outline" @click="$emit('logout')">ออกจากระบบ</Button>
-      </template>
+      <RouterLink
+        v-if="user"
+        :to="{ name: 'account' }"
+        class="flex min-h-11 items-center gap-2 rounded-full bg-muted px-3 text-sm font-medium hover:bg-muted-active"
+      >
+        <span
+          aria-hidden="true"
+          class="flex size-6 items-center justify-center rounded-full bg-accent text-caption font-semibold text-accent-foreground"
+          >{{ Array.from(user.firstName)[0]?.toUpperCase() }}</span
+        >{{ user.firstName }}</RouterLink
+      >
       <RouterLink v-else :to="{ name: 'login' }" :class="cn(buttonVariants())"
         >เข้าสู่ระบบ</RouterLink
       >

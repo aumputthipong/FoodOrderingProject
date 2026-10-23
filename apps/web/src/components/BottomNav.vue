@@ -5,8 +5,8 @@ import { RouterLink } from 'vue-router'
 defineProps<{ cartCount: number }>()
 
 const linkClass =
-  'flex min-h-11 flex-col items-center justify-center gap-0.5 py-1.5 text-xs text-muted-foreground'
-const activeClass = 'font-semibold !text-primary'
+  'flex min-h-11 flex-col items-center justify-center gap-0.5 border-t-2 border-transparent py-1.5 text-xs text-muted-foreground'
+const activeClass = 'font-semibold !border-primary !text-primary'
 </script>
 
 <template>
@@ -28,7 +28,7 @@ const activeClass = 'font-semibold !text-primary'
         <ShoppingCart class="size-[22px]" aria-hidden="true" />
         <span
           v-if="cartCount > 0"
-          class="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground"
+          class="absolute -right-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] text-primary-foreground"
           >{{ cartCount }}</span
         >
       </span>

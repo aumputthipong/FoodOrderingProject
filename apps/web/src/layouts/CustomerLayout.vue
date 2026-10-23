@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import AppLogo from '@/components/AppLogo.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import TopNav from '@/components/TopNav.vue'
@@ -7,21 +6,15 @@ import { useAuthStore } from '@/features/auth'
 import { useCartCount } from '@/features/cart'
 
 const auth = useAuthStore()
-const router = useRouter()
 const cartCount = useCartCount()
-
-async function onLogout(): Promise<void> {
-  await auth.logout()
-  await router.push({ name: 'home' })
-}
 </script>
 
 <template>
   <div class="min-h-dvh bg-background pb-20 md:pb-0">
-    <TopNav :cart-count="cartCount" :user="auth.user" @logout="onLogout" />
+    <TopNav :cart-count="cartCount" :user="auth.user" />
     <header class="flex items-center justify-between bg-card px-4 py-3.5 md:hidden">
       <AppLogo />
-      <span v-if="auth.user" class="text-[13px] text-muted-foreground"
+      <span v-if="auth.user" class="text-caption text-muted-foreground"
         >สวัสดี, {{ auth.user.firstName }}</span
       >
     </header>
