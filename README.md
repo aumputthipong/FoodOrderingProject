@@ -45,3 +45,42 @@ npm run serve
     </td>
   </tr>
 </table>
+
+## Development (v2 – in progress)
+
+Backend ใหม่ (Express 5 + TypeScript + Drizzle + MySQL) เป็น pnpm monorepo อยู่ใน `apps/api` และ `packages/shared` — requires **Node ≥ 24**.
+
+### Option 1: Docker (ง่ายที่สุด)
+
+```bash
+docker compose up --build
+```
+
+- API: http://localhost:3000
+- API docs: http://localhost:3000/api/docs
+
+### Option 2: Dev flow
+
+```bash
+corepack enable
+pnpm install
+docker compose up -d db
+cp apps/api/.env.example apps/api/.env
+pnpm db:reset
+pnpm dev
+```
+
+```bash
+pnpm test        # ต้องมี db ที่รันอยู่ (canteen_test)
+pnpm lint
+pnpm typecheck
+```
+
+### Demo accounts
+
+`merchant1` – `merchant5` และ `customer1` — password: `Password123`
+
+### Notes
+
+- `docker/mysql/init.sql` (สร้างฐานข้อมูล `canteen_test`) รันเฉพาะตอน volume `db-data` ใหม่ — ถ้าต้องสร้างใหม่ใช้ `docker compose down -v`
+- ควร reset volume `db-data` และ `uploads` พร้อมกัน เพราะ seed จะคัดลอกรูปภาพเฉพาะตอนที่ seed ข้อมูลเท่านั้น
