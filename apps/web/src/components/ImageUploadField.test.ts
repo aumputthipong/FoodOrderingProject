@@ -4,14 +4,25 @@ import ImageUploadField, { ACCEPTED_IMAGE_TYPES } from './ImageUploadField.vue'
 const createObjectURL = vi.fn(() => 'blob:preview')
 const revokeObjectURL = vi.fn()
 
+const urlMethods = ['createObjectURL', 'revokeObjectURL'] as const
+const originals = new Map<string, PropertyDescriptor | undefined>()
+
 beforeEach(() => {
+  for (const name of urlMethods) {
+    originals.set(name, Object.getOwnPropertyDescriptor(URL, name))
+  }
   createObjectURL.mockClear()
   revokeObjectURL.mockClear()
-  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
+  Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true })
+  Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true })
 })
 
 afterEach(() => {
-  vi.unstubAllGlobals()
+  for (const name of urlMethods) {
+    const original = originals.get(name)
+    if (original) Object.defineProperty(URL, name, original)
+    else delete (URL as unknown as Record<string, unknown>)[name]
+  }
 })
 
 function setup(props: Record<string, unknown> = {}) {
