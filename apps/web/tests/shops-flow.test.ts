@@ -4,15 +4,15 @@ import { makeProduct, makeShop, makeShopDetail, makeUser } from './fixtures'
 import { mountApp } from './mount-app'
 import { server } from './msw/server'
 
-function trackSearch(): { last: () => string | null } {
-  let last: string | null = null
+function trackSearch(): { seen: (string | null)[]; last: () => string | null } {
+  const seen: (string | null)[] = []
   server.use(
     http.get('*/api/shops', ({ request }) => {
-      last = new URL(request.url).searchParams.get('search')
+      seen.push(new URL(request.url).searchParams.get('search'))
       return HttpResponse.json([makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
     }),
   )
-  return { last: () => last }
+  return { seen, last: () => seen[seen.length - 1] ?? null }
 }
 
 test('home lists shops and links to each shop', async () => {
@@ -25,14 +25,20 @@ test('home lists shops and links to each shop', async () => {
   expect(wrapper.find('a[href="/shops/2"]').exists()).toBe(true)
 })
 
-test('typing in search updates ?q= and requests ?search=', async () => {
+test('typing in search is debounced by 300ms, coalesced, then updates ?q= and requests ?search=', async () => {
   const search = trackSearch()
   const { wrapper, router } = await mountApp({ path: '/' })
-  await wrapper.get('input[type="search"]').setValue('ก๋วย')
+  await vi.waitFor(() => expect(search.seen).toHaveLength(1))
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก')
+  await input.setValue('ก๋')
+  await input.setValue('ก๋วย')
+  await new Promise((resolve) => setTimeout(resolve, 150))
   expect(router.currentRoute.value.query.q).toBeUndefined()
+  expect(search.seen).toEqual([null])
   await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
   await vi.waitFor(() => expect(search.last()).toBe('ก๋วย'))
-  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+  expect(search.seen).toEqual([null, 'ก๋วย'])
 })
 
 test('initial search value comes from ?q=', async () => {
