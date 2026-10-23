@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { nameInitial } from '@/lib/initial'
 import { useAuthStore } from '../index'
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -16,7 +17,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const loggingOut = ref(false)
 
-const initial = computed(() => Array.from(auth.user?.firstName ?? '')[0]?.toUpperCase() ?? '')
+const initial = computed(() => nameInitial(auth.user?.firstName))
 
 const rows = computed(() => {
   const user = auth.user

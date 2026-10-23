@@ -4,6 +4,7 @@ import { ShoppingCart } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import AppLogo from '@/components/AppLogo.vue'
 import { buttonVariants } from '@/components/ui/button'
+import { nameInitial } from '@/lib/initial'
 import { cn } from '@/lib/utils'
 
 defineProps<{ cartCount: number; user: User | null }>()
@@ -51,7 +52,7 @@ const activeClass = 'font-semibold !text-primary'
         <span
           aria-hidden="true"
           class="flex size-6 items-center justify-center rounded-full bg-accent text-caption font-semibold text-accent-foreground"
-          >{{ Array.from(user.firstName)[0]?.toUpperCase() }}</span
+          >{{ nameInitial(user.firstName) }}</span
         >{{ user.firstName }}</RouterLink
       >
       <RouterLink v-else :to="{ name: 'login' }" :class="cn(buttonVariants())"

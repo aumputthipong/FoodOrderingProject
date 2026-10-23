@@ -15,7 +15,7 @@ const { data: carts, isPending, error, refetch } = useCartsQuery()
 const update = useUpdateCartItemMutation()
 const remove = useRemoveCartItemMutation()
 const checkout = useCheckoutMutation()
-// Set right before navigating so the emptied cart never flashes the empty state.
+// Hides the empty state after checkout. isPending covers the awaited refetch in the hook-level onSuccess, ordered covers the gap until navigation.
 const ordered = ref(false)
 
 // Any pending cart mutation locks every group, so two quick taps never send the same absolute quantity.
@@ -48,7 +48,7 @@ function onCheckout(cartId: number): void {
       <Skeleton class="h-48 w-full rounded-card" />
     </template>
     <EmptyState
-      v-else-if="carts.length === 0 && !ordered"
+      v-else-if="carts.length === 0 && !ordered && !checkout.isPending.value"
       title="ตะกร้ายังว่าง"
       description="เลือกเมนูจากร้านในโรงอาหารได้เลย"
     >

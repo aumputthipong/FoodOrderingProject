@@ -59,6 +59,11 @@ test('checkout shows กำลังสั่ง… and never flashes ตะก�
   const gate = new Promise<void>((resolve) => {
     release = resolve
   })
+  // The orders refetch is held until the emptied cart has been rendered for a while.
+  let releaseOrders!: () => void
+  const ordersGate = new Promise<void>((resolve) => {
+    releaseOrders = resolve
+  })
   server.use(
     http.get('*/api/cart', () => HttpResponse.json(ordered ? [] : [makeCart({ id: 5 })])),
     http.post('*/api/orders', async () => {
@@ -66,7 +71,10 @@ test('checkout shows กำลังสั่ง… and never flashes ตะก�
       ordered = true
       return HttpResponse.json(makeOrder({ id: 42 }), { status: 201 })
     }),
-    http.get('*/api/orders/mine', () => HttpResponse.json({ waiting: [], finished: [] })),
+    http.get('*/api/orders/mine', async () => {
+      if (ordered) await ordersGate
+      return HttpResponse.json({ waiting: [], finished: [] })
+    }),
   )
   const { wrapper, router } = await mountApp({ path: '/cart', user: makeUser() })
   await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งอาหารร้านนี้'))
@@ -74,14 +82,17 @@ test('checkout shows กำลังสั่ง… and never flashes ตะก�
   await vi.waitFor(() => expect(wrapper.text()).toContain('กำลังสั่ง…'))
   expect(findButton(wrapper, 'กำลังสั่ง…').attributes('disabled')).toBeDefined()
   expect(wrapper.find('.animate-spin').exists()).toBe(true)
-  const seen: boolean[] = []
-  const stop = router.beforeResolve(() => {
-    seen.push(wrapper.text().includes('ตะกร้ายังว่าง'))
+  let flashed = false
+  const observer = new MutationObserver(() => {
+    if (wrapper.text().includes('ตะกร้ายังว่าง')) flashed = true
   })
+  observer.observe(wrapper.element, { childList: true, subtree: true, characterData: true })
   release()
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  releaseOrders()
   await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('orders'))
-  stop()
-  expect(seen).not.toContain(true)
+  observer.disconnect()
+  expect(flashed).toBe(false)
   expect(wrapper.text()).not.toContain('ตะกร้ายังว่าง')
 })
 
