@@ -69,7 +69,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/merchant/queue',
     name: 'merchant-queue',
-    component: placeholder,
+    component: () => import('@/features/merchant/pages/QueuePage.vue'),
     meta: { ...merchantMeta, requiresShop: true, title: 'คิวออเดอร์' },
   },
   {
