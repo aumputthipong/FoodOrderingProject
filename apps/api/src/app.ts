@@ -2,11 +2,13 @@ import cors from 'cors'
 import express, { type Express } from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 import { pinoHttp } from 'pino-http'
 import { AppError } from './common/errors'
 import { errorHandler } from './common/middlewares/errorHandler'
 import { notFound } from './common/middlewares/notFound'
 import { env } from './config/env'
+import { getOpenApiDocument } from './docs/openapi'
 import { createAuthRouter } from './modules/auth/auth.routes'
 import { cartRouter } from './modules/cart/cart.routes'
 import { healthRouter } from './modules/health/health.routes'
@@ -30,6 +32,13 @@ export function createApp(options: CreateAppOptions = {}): Express {
   })
 
   const app = express()
+
+  // Swagger UI needs inline scripts/styles, so the docs are mounted before helmet().
+  // Helmet's default CSP still applies to every other route.
+  app.get('/api/openapi.json', (_req, res) => {
+    res.json(getOpenApiDocument())
+  })
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(getOpenApiDocument()))
 
   app.use(helmet())
   app.use(cors({ origin: env.CORS_ORIGINS }))
