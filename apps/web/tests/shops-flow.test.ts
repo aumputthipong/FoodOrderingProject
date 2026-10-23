@@ -299,15 +299,71 @@ test('back/forward cancels a pending debounce so it cannot overwrite the restore
 test('typing is not overwritten by an older ?q= while debounce is pending', async () => {
   trackSearch()
   const { wrapper, router } = await mountApp({ path: '/' })
+  let held = 0
+  router.beforeEach(async (to) => {
+    if (to.query.q === 'ก๋') {
+      held += 1
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+  })
   const input = wrapper.get('input[type="search"]')
   await input.setValue('ก๋')
-  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋'))
+  await vi.waitFor(() => expect(held).toBe(1))
   await input.setValue('ก๋ว')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋'))
+  expect(searchInput(wrapper).value).toBe('ก๋ว')
   await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋ว'))
+  expect(searchInput(wrapper).value).toBe('ก๋ว')
+})
+
+test('a whitespace-only entry does not stop a later navigation from syncing the box', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  await wrapper.get('input[type="search"]').setValue(' ')
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  await router.push({ path: '/', query: { q: 'x' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('x'))
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe(''))
+})
+
+test('typing and reverting within the debounce does not stop a later back from syncing', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/?q=ก๋วย' })
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก๋วยx')
   await input.setValue('ก๋วย')
-  expect(searchInput(wrapper).value).toBe('ก๋วย')
-  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
-  expect(searchInput(wrapper).value).toBe('ก๋วย')
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+})
+
+test('clearing a no-result search never flashes the empty-canteen state', async () => {
+  server.use(
+    http.get('*/api/shops', async ({ request }) => {
+      const search = new URL(request.url).searchParams.get('search')
+      if (search) return HttpResponse.json([])
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      return HttpResponse.json([makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/?q=zzz' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === 'ล้างคำค้นหา')!
+    .trigger('click')
+  const flashed: boolean[] = []
+  await vi.waitFor(
+    () => {
+      flashed.push(wrapper.text().includes('ยังไม่มีร้านในโรงอาหาร'))
+      expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว')
+    },
+    { interval: 10 },
+  )
+  expect(flashed.some(Boolean)).toBe(false)
 })
 
 test('clear-search button clears ?q= and shows all shops', async () => {

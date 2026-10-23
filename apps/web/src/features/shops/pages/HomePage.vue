@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, SearchX } from '@lucide/vue'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import ErrorState from '@/components/ErrorState.vue'
@@ -21,11 +21,11 @@ function queryParam(): string {
 
 const input = ref(queryParam())
 const search = computed(() => queryParam().trim())
-const { data: shops, isPending, isError, error, refetch } = useShopsQuery(search)
+const { data: shops, isPending, isPlaceholderData, isError, error, refetch } = useShopsQuery(search)
 
 let syncTimer: ReturnType<typeof setTimeout> | null = null
-// values this page wrote to the URL that the route has not reported back yet
-const written = new Set<string>()
+// the term this page last wrote to the URL, until that navigation settles
+let lastWritten: string | null = null
 
 function cancelSync(): void {
   if (syncTimer !== null) clearTimeout(syncTimer)
@@ -33,8 +33,14 @@ function cancelSync(): void {
 }
 
 function writeUrl(trimmed: string): void {
-  written.add(trimmed)
-  void router.replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
+  lastWritten = trimmed
+  void router
+    .replace({ query: { ...route.query, q: trimmed === '' ? undefined : trimmed } })
+    .finally(async () => {
+      // let the route watcher see the echo first; no-op/cancelled navigations settle too
+      await nextTick()
+      if (lastWritten === trimmed) lastWritten = null
+    })
 }
 
 function syncUrl(value: string): void {
@@ -49,8 +55,7 @@ function syncUrl(value: string): void {
 watch(
   () => queryParam().trim(),
   (q) => {
-    if (written.delete(q)) return
-    written.clear()
+    if (q === lastWritten || q === input.value.trim()) return
     cancelSync()
     input.value = q
   },
@@ -116,7 +121,10 @@ function clearSearch(): void {
         <h1 class="page-title">ร้านในโรงอาหาร</h1>
         <span v-if="shops" class="text-caption text-muted-foreground">{{ shops.length }} ร้าน</span>
       </div>
-      <div v-if="isPending" class="grid grid-cols-1 gap-2.5 md:grid-cols-3 md:gap-4">
+      <div
+        v-if="isPending || (isPlaceholderData && !shops?.length)"
+        class="grid grid-cols-1 gap-2.5 md:grid-cols-3 md:gap-4"
+      >
         <div
           v-for="n in 4"
           :key="n"
