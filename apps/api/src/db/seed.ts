@@ -1,3 +1,4 @@
+import { constants as fsConstants } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -10,14 +11,29 @@ import { SEED_PASSWORD, seedCustomers, seedMerchants, seedProducts, seedShops } 
 
 const BCRYPT_COST = 10
 
-async function copySeedImages(filenames: string[]): Promise<void> {
+/** Copies the seed images that are missing from UPLOAD_DIR; existing files are never replaced. */
+async function copyMissingSeedImages(filenames: string[]): Promise<void> {
   await fs.mkdir(env.UPLOAD_DIR, { recursive: true })
   for (const filename of filenames) {
-    await fs.copyFile(path.join(env.SEED_IMAGES_DIR, filename), path.join(env.UPLOAD_DIR, filename))
+    try {
+      await fs.copyFile(
+        path.join(env.SEED_IMAGES_DIR, filename),
+        path.join(env.UPLOAD_DIR, filename),
+        fsConstants.COPYFILE_EXCL,
+      )
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+    }
   }
 }
 
 export async function seed(): Promise<{ skipped: boolean }> {
+  // Before the skip check: the DB can outlive the uploads volume, and its rows point at these files.
+  await copyMissingSeedImages([
+    ...seedShops.map((s) => s.image),
+    ...seedProducts.map((p) => p.image),
+  ])
+
   const [existing] = await db
     .select({ id: users.id })
     .from(users)
@@ -25,7 +41,6 @@ export async function seed(): Promise<{ skipped: boolean }> {
     .limit(1)
   if (existing) return { skipped: true }
 
-  await copySeedImages([...seedShops.map((s) => s.image), ...seedProducts.map((p) => p.image)])
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, BCRYPT_COST)
 
   await withTransaction(async (tx) => {

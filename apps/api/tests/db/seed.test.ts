@@ -6,6 +6,7 @@ import { env } from '../../src/config/env'
 import { db } from '../../src/db/client'
 import { products, shops, users } from '../../src/db/schema'
 import { seed } from '../../src/db/seed'
+import { seedProducts } from '../../src/db/seed-data'
 import { api, auth } from '../helpers/app'
 import { loginAs } from '../helpers/factories'
 
@@ -38,4 +39,30 @@ test('seed is idempotent', async () => {
   await seed()
   expect(await seed()).toEqual({ skipped: true })
   expect(await countRows(users)).toBe(6)
+})
+
+test('a skipped seed still restores missing seed images', async () => {
+  await seed()
+  const [shop] = await db.select().from(shops).limit(1)
+  const image = path.join(env.UPLOAD_DIR, shop!.imageFilename!)
+  fs.rmSync(image)
+
+  expect(await seed()).toEqual({ skipped: true })
+  expect(fs.readFileSync(image)).toEqual(
+    fs.readFileSync(path.join(env.SEED_IMAGES_DIR, shop!.imageFilename!)),
+  )
+})
+
+test('seed never overwrites an existing file in UPLOAD_DIR', async () => {
+  const image = seedProducts[0]?.image
+  const target = path.join(env.UPLOAD_DIR, image!)
+  fs.mkdirSync(env.UPLOAD_DIR, { recursive: true })
+  fs.writeFileSync(target, 'kept')
+  try {
+    await seed()
+    expect(await seed()).toEqual({ skipped: true })
+    expect(fs.readFileSync(target, 'utf8')).toBe('kept')
+  } finally {
+    fs.rmSync(target, { force: true })
+  }
 })
