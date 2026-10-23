@@ -9,6 +9,5 @@
 apps/api/uploads/*
 .superpowers
 .backups
-myfrontend
 docs
 **/*.log

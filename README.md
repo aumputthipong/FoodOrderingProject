@@ -1,16 +1,7 @@
 # CanteenFoodOrdering Web Application Project
 ## Web Programming Course Project in academic 2nd Year
-develope by using Vue.js Express.js and bulmaCSS with MySQL database  
+Canteen food ordering built with Vue 3, Express 5 and MySQL (pnpm monorepo). See [Development](#development) below to run it.
 
-## Project setup
-```bash
-npm install 
-```
-
-## Project start
-```bash
-npm run serve
-```
 ## 📖 Overview
 
 <table cellpadding="10" cellspacing="10">
@@ -46,7 +37,7 @@ npm run serve
   </tr>
 </table>
 
-## Development (v2 – in progress)
+## Development
 
 Rebuild เป็น pnpm monorepo: `apps/api` (Express 5 + TypeScript + Drizzle + MySQL), `apps/web` (Vue 3 + Vite) และ `packages/shared` (Zod schema ที่ใช้ร่วมกัน) — requires **Node ≥ 24**.
 
