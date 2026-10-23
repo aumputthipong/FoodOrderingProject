@@ -290,7 +290,7 @@ OrderItem = { id, productId, name, imageUrl, unitPrice, quantity, isDone }
 | Method | Path | Auth | Body | Success |
 |---|---|---|---|---|
 | GET | `/api/cart?shopId=` | ✔ | – | 200 `Cart[]` |
-| PUT | `/api/cart/shops/:shopId/items` | ✔ | `{ items: [{ productId, quantity }] }` | 200 `Cart` หรือ 204 ถ้า items ว่าง |
+| PUT | `/api/cart/shops/:shopId/items` | ✔ | `{ items: [{ productId, quantity }] }` | 200 `Cart` หรือ 204 ถ้า items ว่าง; 404 ถ้าไม่มีร้านนี้ (ทั้งกรณี items ว่างและไม่ว่าง) |
 | PATCH | `/api/cart/items/:id` | ✔ | `{ quantity }` (≥ 1) | 200 `CartItem` |
 | DELETE | `/api/cart/items/:id` | ✔ | – | 204 |
 

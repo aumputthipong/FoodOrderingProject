@@ -75,6 +75,16 @@ describe('PUT /api/cart/shops/:shopId/items', () => {
     expect((await putCart(token, shop.id, { items: [] })).status).toBe(204)
   })
 
+  test('unknown shop is a 404, with or without items', async () => {
+    const { token, a } = await setup()
+    for (const items of [[{ productId: a.id, quantity: 1 }], []]) {
+      const res = await putCart(token, 999_999, { items })
+      expect(res.status).toBe(404)
+      expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Shop not found' } })
+    }
+    expect(await db.select().from(carts)).toHaveLength(0)
+  })
+
   test('rejects products from another shop, unavailable or unknown products (400)', async () => {
     const { shop, token, a } = await setup()
     const other = await createMerchantWithShop()

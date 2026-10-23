@@ -134,7 +134,7 @@ function buildOpenApiDocument() {
 
   // Cart
   add({ method: 'get', path: '/api/cart', tag: 'Cart', summary: 'List my carts', auth: true, query: cartQuerySchema, status: 200, response: z.array(cartSchema) })
-  add({ method: 'put', path: '/api/cart/shops/{shopId}/items', tag: 'Cart', summary: 'Replace cart items for a shop', auth: true, params: shopIdParamSchema, body: replaceCartItemsSchema, status: 200, response: cartSchema, extraStatus: { 204: 'Cart removed (items was empty)' } })
+  add({ method: 'put', path: '/api/cart/shops/{shopId}/items', tag: 'Cart', summary: 'Replace cart items for a shop', auth: true, params: shopIdParamSchema, body: replaceCartItemsSchema, status: 200, response: cartSchema, extraStatus: { 204: 'Cart removed (items was empty)' }, errors: [404] })
   add({ method: 'patch', path: '/api/cart/items/{id}', tag: 'Cart', summary: 'Update item quantity', auth: true, params: idParamSchema, body: updateCartItemSchema, status: 200, response: cartItemSchema, errors: [404] })
   add({ method: 'delete', path: '/api/cart/items/{id}', tag: 'Cart', summary: 'Remove cart item', auth: true, params: idParamSchema, status: 204, errors: [404] })
 

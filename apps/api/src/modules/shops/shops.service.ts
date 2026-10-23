@@ -66,6 +66,11 @@ export async function updateShop(
   return toShop(row)
 }
 
+/** `NotFoundError` unless the shop exists. */
+export async function assertShopExists(shopId: number, tx?: DbClient): Promise<void> {
+  if (!(await repo.findById(shopId, tx))) throw new NotFoundError(SHOP_NOT_FOUND)
+}
+
 /** The shop, if it exists (else 404) and `user` may manage it (else 403). */
 export async function getManageableShop(
   user: User,

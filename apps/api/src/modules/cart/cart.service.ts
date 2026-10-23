@@ -2,6 +2,7 @@ import type { Cart, CartItem, ProductStatus, ReplaceCartItemsInput } from '@cant
 import { NotFoundError, ValidationError } from '../../common/errors'
 import { withTransaction, type DbClient, type Tx } from '../../db/client'
 import { findProductsForCart } from '../products/products.service'
+import { assertShopExists } from '../shops/shops.service'
 import { toCart, toCartItem } from './cart.mapper'
 import * as repo from './cart.repository'
 
@@ -37,6 +38,7 @@ export async function listCarts(userId: number, shopId?: number): Promise<Cart[]
 /**
  * Replaces everything the user has in the cart of `shopId`.
  * Returns the new cart, or `null` when `items` is empty (the cart is deleted).
+ * `NotFoundError` when the shop does not exist, whether or not `items` is empty.
  */
 export async function replaceCartItems(
   userId: number,
@@ -44,13 +46,17 @@ export async function replaceCartItems(
   items: ReplaceCartItemsInput['items'],
 ): Promise<Cart | null> {
   if (items.length === 0) {
+    await assertShopExists(shopId)
     await repo.deleteCartByUserAndShop(userId, shopId)
     return null
   }
 
   return withTransaction(async (tx) => {
-    // Lock first: everything below then runs after a concurrent replacement of the same cart has
-    // committed, and replaces what it left behind.
+    // Checked before the upsert, whose foreign key would otherwise fail with a 500. A plain read
+    // at READ COMMITTED keeps no snapshot, so it does not matter that it precedes the lock.
+    await assertShopExists(shopId, tx)
+    // Lock the cart: everything below then runs after a concurrent replacement of the same cart
+    // has committed, and replaces what it left behind.
     const cartId = await repo.upsertCart(userId, shopId, tx)
     await assertAllAvailable(shopId, items, tx)
     await repo.deleteItemsByCartId(cartId, tx)

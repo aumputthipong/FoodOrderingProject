@@ -27,6 +27,12 @@ test('documents every endpoint', async () => {
   expect(res.body.components.securitySchemes.bearerAuth.scheme).toBe('bearer')
 })
 
+test('documents the 404 of a cart replace for an unknown shop', async () => {
+  const res = await api().get('/api/openapi.json')
+  const responses = res.body.paths['/api/cart/shops/{shopId}/items'].put.responses
+  expect(Object.keys(responses).sort()).toEqual(['200', '204', '400', '401', '404'])
+})
+
 test('serves Swagger UI', async () => {
   const res = await api().get('/api/docs/')
   expect(res.status).toBe(200)
