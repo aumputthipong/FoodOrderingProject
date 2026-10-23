@@ -1,0 +1,14 @@
+# Read by Docker for builds whose context is the repo root.
+**/node_modules
+**/dist
+**/tmp
+**/coverage
+.git
+.env
+**/.env
+apps/api/uploads/*
+.superpowers
+.backups
+myfrontend
+docs
+**/*.log
