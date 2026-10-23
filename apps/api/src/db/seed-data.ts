@@ -39,7 +39,7 @@ export const seedShops = [
   {
     name: 'ร้านลูกชิ้นลุง',
     description: 'ลูกชิ้นทอด ไก่ทอด ข้าวเหนียวหมูทอด ลุงขายหมด',
-    image: 'shop-5.png',
+    image: 'shop-5.jpg',
   },
 ]
 
@@ -75,7 +75,7 @@ export const seedProducts = [
     description: 'ผัดกระเพราหมูสับ',
     price: 40,
     status: 'available' as const,
-    image: 'product-4.webp',
+    image: 'product-4.jpg',
   },
   {
     shop: 2,
@@ -83,6 +83,6 @@ export const seedProducts = [
     description: 'ข้าวผัดโบราณ',
     price: 40,
     status: 'available' as const,
-    image: 'product-5.avif',
+    image: 'product-5.jpg',
   },
 ]
