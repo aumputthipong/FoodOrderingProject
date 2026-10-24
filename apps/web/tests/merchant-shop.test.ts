@@ -291,3 +291,15 @@ test('creating a shop still succeeds and navigates when refreshing /me fails aft
   expect(wrapper.text()).not.toContain('ข้อมูลไม่ถูกต้อง')
   expect(router.currentRoute.value.name).not.toBe('merchant-shop-new')
 })
+
+test('เมนูในร้าน link is active on the edit-menu page', async () => {
+  serveShop(makeShopDetail({ products: [makeProduct({ id: 5 })] }))
+  const { wrapper } = await mountApp({ path: '/merchant/menu/5/edit', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แก้ไขเมนู'))
+  const anchors = wrapper.get('[data-testid="merchant-sidebar"]').findAll('a')
+  const menu = anchors.find((a) => a.text() === 'เมนูในร้าน')
+  const queue = anchors.find((a) => a.text() === 'คิวออเดอร์')
+  expect(menu?.attributes('aria-current')).toBe('page')
+  expect(queue?.attributes('aria-current')).toBeUndefined()
+  wrapper.unmount()
+})

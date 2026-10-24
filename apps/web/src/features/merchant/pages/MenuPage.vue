@@ -27,7 +27,7 @@ function toggle(productId: number, open: boolean) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4 lg:p-8">
+  <div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <h1 class="font-heading text-[26px] font-semibold">เมนูในร้าน</h1>
       <RouterLink :to="{ name: 'merchant-menu-new' }" :class="cn(buttonVariants(), 'min-h-11')"

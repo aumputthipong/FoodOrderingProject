@@ -47,7 +47,7 @@ async function onSubmit({ fields, image }: { fields: ProductFields; image: File 
 
 <template>
   <NotFoundPage v-if="notFound" />
-  <div v-else class="flex flex-col gap-6 p-4 lg:p-8">
+  <div v-else class="flex flex-col gap-6">
     <h1 class="font-heading text-[26px] font-semibold">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">

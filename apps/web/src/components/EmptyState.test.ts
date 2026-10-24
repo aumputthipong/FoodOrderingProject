@@ -32,6 +32,16 @@ test('EmptyState without icon renders no icon circle', () => {
   expect(wrapper.find('[data-testid="empty-icon"]').exists()).toBe(false)
 })
 
+test('EmptyState compact is tighter, has no icon circle and a smaller title', () => {
+  const wrapper = mount(EmptyState, {
+    props: { title: 'ยังไม่มีออเดอร์ที่เสร็จ', icon: Ticket, compact: true },
+  })
+  expect(wrapper.find('[data-testid="empty-icon"]').exists()).toBe(false)
+  expect(wrapper.classes()).toContain('py-6')
+  expect(wrapper.classes()).not.toContain('py-16')
+  expect(wrapper.get('h2').classes()).toContain('text-body-sm')
+})
+
 test('ErrorState shows an icon with the Thai message and emits retry', async () => {
   const wrapper = mount(ErrorState, { props: { error: new Error('boom') } })
   expect(wrapper.find('svg').exists()).toBe(true)

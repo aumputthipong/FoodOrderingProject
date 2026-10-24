@@ -68,7 +68,7 @@ test('ticking an item updates immediately and calls PATCH /order-items/:id', asy
   await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
   expect(wrapper.text()).toContain('รอทำ 1')
   expect(wrapper.text()).toContain('เสร็จแล้ว 0')
-  expect(wrapper.text()).toContain('สมชาย · 0812345678')
+  expect(wrapper.text()).toContain('สมชาย · 081-234-5678')
   await checkbox(wrapper, 'ข้าวมันไก่').trigger('click')
   // checked while the request is still pending
   await vi.waitFor(() =>
@@ -270,4 +270,83 @@ test('logout in the merchant layout clears the session and goes to the customer 
   await wrapper.get('[data-testid="merchant-sidebar"]').find('button').trigger('click')
   await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
   expect(localStorage.getItem('token')).toBeNull()
+})
+
+test('completing an order shows คิว #42 เสร็จแล้ว with ย้อนกลับ that sends status waiting', async () => {
+  const body = vi.fn()
+  const success = vi.spyOn(toast, 'success').mockImplementation(() => '')
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({ waiting: [order()], finished: [] }),
+    ),
+    http.patch('*/api/orders/:id/status', async ({ params, request }) => {
+      body(params.id, await request.json())
+      return HttpResponse.json(order())
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
+  await findButton(wrapper, 'เสร็จทั้งออเดอร์').trigger('click')
+  await vi.waitFor(() => expect(success).toHaveBeenCalled())
+  const [message, options] = success.mock.calls[0]!
+  expect(message).toBe('คิว #42 เสร็จแล้ว')
+  const action = (options as { action: { label: string; onClick: () => void } }).action
+  expect(action.label).toBe('ย้อนกลับ')
+  action.onClick()
+  await vi.waitFor(() => expect(body).toHaveBeenLastCalledWith('42', { status: 'waiting' }))
+  wrapper.unmount()
+})
+
+test('undo failure shows an error toast and leaves buttons usable (Review Focus 3)', async () => {
+  const success = vi.spyOn(toast, 'success').mockImplementation(() => '')
+  const toastError = vi.spyOn(toast, 'error').mockImplementation(() => '')
+  const calls: string[] = []
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({ waiting: [order()], finished: [] }),
+    ),
+    http.patch('*/api/orders/:id/status', async ({ request }) => {
+      const { status } = (await request.json()) as { status: string }
+      calls.push(status)
+      return status === 'waiting'
+        ? HttpResponse.json({ message: 'boom' }, { status: 500 })
+        : HttpResponse.json(order())
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
+  await findButton(wrapper, 'เสร็จทั้งออเดอร์').trigger('click')
+  await vi.waitFor(() => expect(success).toHaveBeenCalled())
+  const options = success.mock.calls[0]![1] as { action: { onClick: () => void } }
+  options.action.onClick()
+  await vi.waitFor(() => expect(toastError).toHaveBeenCalled())
+  await flushPromises()
+  expect(calls).toEqual(['finished', 'waiting'])
+  expect(findButton(wrapper, 'เสร็จทั้งออเดอร์').attributes('disabled')).toBeUndefined()
+  wrapper.unmount()
+})
+
+test('finished column empty shows ยังไม่มีออเดอร์ที่เสร็จ', async () => {
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({ waiting: [order()], finished: [] }),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
+  expect(wrapper.find('aside[aria-label="เสร็จแล้ว"]').text()).toContain('ยังไม่มีออเดอร์ที่เสร็จ')
+  wrapper.unmount()
+})
+
+test('the customer link lives in the sidebar and the tab strip, not a separate row', async () => {
+  server.use(
+    http.get('*/api/shops/mine/orders', () => HttpResponse.json({ waiting: [], finished: [] })),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีออเดอร์'))
+  const links = wrapper.findAll('a').filter((a) => a.text().includes('ไปหน้าลูกค้า'))
+  expect(links).toHaveLength(2)
+  expect(wrapper.get('[data-testid="merchant-sidebar"]').text()).toContain('ไปหน้าลูกค้า')
+  expect(wrapper.get('[data-testid="merchant-tabs"]').text()).toContain('ไปหน้าลูกค้า')
+  wrapper.unmount()
 })

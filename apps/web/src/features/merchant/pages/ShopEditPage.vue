@@ -29,7 +29,7 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4 lg:p-8">
+  <div class="flex flex-col gap-6">
     <h1 class="font-heading text-[26px] font-semibold">ข้อมูลร้าน</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
