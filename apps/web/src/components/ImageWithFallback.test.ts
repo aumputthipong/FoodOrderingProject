@@ -25,3 +25,12 @@ test('swaps to the fallback after an image error', async () => {
   expect(wrapper.find('img').exists()).toBe(false)
   expect(wrapper.find('[data-testid="image-fallback"]').exists()).toBe(true)
 })
+
+test('merges a class onto the ratio wrapper', () => {
+  const wrapper = mount(ImageWithFallback, {
+    props: { src: null, alt: 'x', ratio: '1/1', class: 'w-[76px] rounded-thumb' },
+  })
+  expect(wrapper.classes()).toContain('rounded-thumb')
+  expect(wrapper.classes()).toContain('w-[76px]')
+  expect(wrapper.classes()).not.toContain('w-full')
+})

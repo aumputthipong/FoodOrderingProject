@@ -70,7 +70,7 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="font-heading text-xl">สมัครสมาชิก</CardTitle>
+      <CardTitle class="page-title">สมัครสมาชิก</CardTitle>
     </CardHeader>
     <CardContent>
       <form class="grid gap-4" novalidate @submit="onSubmit">

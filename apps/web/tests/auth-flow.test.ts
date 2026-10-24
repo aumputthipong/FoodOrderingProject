@@ -137,3 +137,71 @@ test('logout from account returns home and hides account links', async () => {
   await vi.waitFor(() => expect(wrapper.find('a[href="/login"]').exists()).toBe(true))
   expect(wrapper.text()).not.toContain('somchai')
 })
+
+test('account page shows initials and logs out from the account page', async () => {
+  server.use(http.post('*/api/auth/logout', () => new HttpResponse(null, { status: 204 })))
+  const { wrapper, router } = await mountApp({ path: '/account', user: makeUser() })
+  expect(wrapper.get('[data-testid="account-initial"]').text()).toBe('ส')
+  const button = wrapper.findAll('button').find((b) => b.text().includes('ออกจากระบบ'))
+  expect(button!.classes()).toContain('text-destructive')
+  await button!.trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+})
+
+test('account initial is uppercased for Latin names', async () => {
+  const { wrapper } = await mountApp({
+    path: '/account',
+    user: makeUser({ firstName: 'alice', lastName: 'Smith' }),
+  })
+  expect(wrapper.get('[data-testid="account-initial"]').text()).toBe('A')
+})
+
+test('desktop top nav shows the user chip linking to account and no logout button', async () => {
+  const { wrapper } = await mountApp({ path: '/', user: makeUser() })
+  const nav = wrapper.get('[data-testid="top-nav"]')
+  const chip = nav.get('a[href="/account"]')
+  expect(chip.text()).toContain('สมชาย')
+  expect(nav.text()).not.toContain('ออกจากระบบ')
+  expect(nav.findAll('button')).toHaveLength(0)
+})
+
+test('guests keep the login link in the top nav', async () => {
+  const { wrapper } = await mountApp({ path: '/' })
+  const nav = wrapper.get('[data-testid="top-nav"]')
+  expect(nav.get('a[href="/login"]').text()).toContain('เข้าสู่ระบบ')
+  expect(nav.find('a[href="/account"]').exists()).toBe(false)
+})
+
+test('login with ?redirect= explains why', async () => {
+  const { wrapper } = await mountApp({ path: '/login?redirect=/cart' })
+  expect(wrapper.text()).toContain('เข้าสู่ระบบเพื่อสั่งอาหาร')
+  const plain = await mountApp({ path: '/login' })
+  expect(plain.wrapper.text()).not.toContain('เข้าสู่ระบบเพื่อสั่งอาหาร')
+  const unsafe = await mountApp({ path: '/login?redirect=//evil.com' })
+  expect(unsafe.wrapper.text()).not.toContain('เข้าสู่ระบบเพื่อสั่งอาหาร')
+})
+
+test('demo hint shows only when VITE_DEMO_HINT=true', async () => {
+  const hint = 'บัญชีทดลอง: customer1 (ลูกค้า) · merchant1 (ร้านค้า) · รหัสผ่าน Password123'
+  const off = await mountApp({ path: '/login' })
+  expect(off.wrapper.text()).not.toContain('บัญชีทดลอง')
+  vi.stubEnv('VITE_DEMO_HINT', 'true')
+  try {
+    const on = await mountApp({ path: '/login' })
+    expect(on.wrapper.get('[role="note"]').text()).toContain(hint)
+    const signup = await mountApp({ path: '/signup' })
+    expect(signup.wrapper.text()).not.toContain('บัญชีทดลอง')
+  } finally {
+    vi.unstubAllEnvs()
+  }
+})
+
+test('logo and back link go home', async () => {
+  const { wrapper } = await mountApp({ path: '/login' })
+  const layout = wrapper.get('[data-testid="auth-layout"]')
+  expect(layout.get('a[href="/"]').attributes('href')).toBe('/')
+  const back = layout.findAll('a').find((a) => a.text().includes('กลับไปเลือกร้าน'))
+  expect(back!.attributes('href')).toBe('/')
+  const signup = await mountApp({ path: '/signup' })
+  expect(signup.wrapper.get('[data-testid="auth-layout"]').text()).toContain('กลับไปเลือกร้าน')
+})

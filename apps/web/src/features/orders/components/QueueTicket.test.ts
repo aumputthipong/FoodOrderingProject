@@ -53,3 +53,30 @@ test('finished order shows เสร็จแล้ว and finish time', () => {
   expect(text).not.toContain('กำลังทำ')
   expect(wrapper.get('[data-testid="status-pill"]').text()).toBe('เสร็จแล้ว')
 })
+
+test('finished ticket shows พร้อมรับที่ร้าน with a success ring, waiting ticket does not', () => {
+  const done = mount(QueueTicket, {
+    props: {
+      order: makeOrder({
+        status: 'finished',
+        finishedAt: '2026-01-01T03:20:00.000Z',
+        items: [item(1, 'ผัดกระเพรา', true)],
+      }),
+    },
+  })
+  expect(done.text()).toContain('พร้อมรับที่ร้าน')
+  expect(done.get('article').classes()).toContain('ring-success/40')
+  const waiting = mount(QueueTicket, { props: { order: makeOrder() } })
+  expect(waiting.text()).not.toContain('พร้อมรับที่ร้าน')
+  expect(waiting.get('article').classes()).not.toContain('ring-success/40')
+})
+
+test('progress track is visible at 0% (bg-muted) without a transition', () => {
+  const wrapper = mount(QueueTicket, {
+    props: { order: makeOrder({ items: [item(1, 'ผัดกระเพรา', false)] }) },
+  })
+  const track = wrapper.get('[role="progressbar"]')
+  expect(track.classes()).toContain('bg-muted')
+  expect(track.attributes('aria-valuenow')).toBe('0')
+  expect(track.html()).not.toContain('transition')
+})

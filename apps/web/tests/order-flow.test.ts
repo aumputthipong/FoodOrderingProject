@@ -53,6 +53,76 @@ test('checkout from the cart goes to the queue and shows the new ticket', async 
   expect(wrapper.text()).toContain('กำลังทำ (1)')
 })
 
+test('checkout shows กำลังสั่ง… and never flashes ตะกร้ายังว่าง before navigating', async () => {
+  let ordered = false
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  // The orders refetch is held until the emptied cart has been rendered for a while.
+  let releaseOrders!: () => void
+  const ordersGate = new Promise<void>((resolve) => {
+    releaseOrders = resolve
+  })
+  server.use(
+    http.get('*/api/cart', () => HttpResponse.json(ordered ? [] : [makeCart({ id: 5 })])),
+    http.post('*/api/orders', async () => {
+      await gate
+      ordered = true
+      return HttpResponse.json(makeOrder({ id: 42 }), { status: 201 })
+    }),
+    http.get('*/api/orders/mine', async () => {
+      if (ordered) await ordersGate
+      return HttpResponse.json({ waiting: [], finished: [] })
+    }),
+  )
+  const { wrapper, router } = await mountApp({ path: '/cart', user: makeUser() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งอาหารร้านนี้'))
+  await findButton(wrapper, 'สั่งอาหารร้านนี้').trigger('click')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('กำลังสั่ง…'))
+  expect(findButton(wrapper, 'กำลังสั่ง…').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('.animate-spin').exists()).toBe(true)
+  let flashed = false
+  const observer = new MutationObserver(() => {
+    if (wrapper.text().includes('ตะกร้ายังว่าง')) flashed = true
+  })
+  observer.observe(wrapper.element, { childList: true, subtree: true, characterData: true })
+  release()
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  releaseOrders()
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('orders'))
+  observer.disconnect()
+  expect(flashed).toBe(false)
+  expect(wrapper.text()).not.toContain('ตะกร้ายังว่าง')
+})
+
+test('empty waiting tab says ยังไม่มีคิวที่กำลังทำ with ไปเลือกร้าน', async () => {
+  server.use(
+    http.get('*/api/orders/mine', () =>
+      HttpResponse.json({ waiting: [], finished: [makeOrder({ id: 2, status: 'finished' })] }),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/orders', user: makeUser() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีคิวที่กำลังทำ'))
+  expect(wrapper.text()).toContain('สั่งอาหารแล้วคิวจะแสดงที่นี่')
+  const link = wrapper.findAll('a').find((a) => a.text().includes('ไปเลือกร้าน'))
+  expect(link?.attributes('href')).toBe('/')
+})
+
+test('empty finished tab says ยังไม่มีคิวที่เสร็จ without an action', async () => {
+  server.use(
+    http.get('*/api/orders/mine', () =>
+      HttpResponse.json({ waiting: [makeOrder({ id: 1 })], finished: [] }),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/orders', user: makeUser() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#1'))
+  const tab = wrapper.findAll('[role="tab"]').find((t) => t.text().includes('เสร็จแล้ว (0)'))
+  await tab!.trigger('mousedown', { button: 0 })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีคิวที่เสร็จ'))
+  expect(wrapper.findAll('a').some((a) => a.text().includes('ไปเลือกร้าน'))).toBe(false)
+})
+
 test('minus at quantity 1 removes the item', async () => {
   const removed = vi.fn()
   let items = [cartItem(9, 'ไก่ทอด', 50, 1), cartItem(10, 'น้ำเปล่า', 10, 1)]
@@ -115,10 +185,10 @@ test('empty cart shows the empty state', async () => {
   expect(link?.attributes('href')).toBe('/')
 })
 
-test('no orders shows "ยังไม่มีคิว"', async () => {
+test('no orders shows "ยังไม่มีคิวที่กำลังทำ"', async () => {
   server.use(http.get('*/api/orders/mine', () => HttpResponse.json({ waiting: [], finished: [] })))
   const { wrapper } = await mountApp({ path: '/orders', user: makeUser() })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีคิว'))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ยังไม่มีคิวที่กำลังทำ'))
   expect(wrapper.text()).toContain('คิวของฉัน')
   expect(wrapper.text()).toContain('กำลังทำ (0)')
   expect(wrapper.text()).toContain('เสร็จแล้ว (0)')

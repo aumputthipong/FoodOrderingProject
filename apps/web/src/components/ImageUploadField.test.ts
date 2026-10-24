@@ -114,3 +114,35 @@ test('revokes the previous object URL on change and on unmount', async () => {
   wrapper.unmount()
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview')
 })
+
+test('input is described by hint/error and aria-invalid when erroring', async () => {
+  const wrapper = setup()
+  const input = wrapper.get('input[type="file"]')
+  expect(input.attributes('aria-invalid')).toBeUndefined()
+  const hintId = input.attributes('aria-describedby')!
+  expect(wrapper.get(`#${CSS.escape(hintId)}`).text()).toBe(
+    'รองรับ JPEG, PNG, WebP, AVIF หรือ GIF ไม่เกิน 5 MB',
+  )
+  await wrapper.setProps({ error: 'กรุณาเลือกรูป' })
+  expect(input.attributes('aria-invalid')).toBe('true')
+  const ids = input.attributes('aria-describedby')!.split(' ')
+  expect(ids).toHaveLength(2)
+  const errorEl = wrapper.get('[role="alert"]')
+  expect(ids).toContain(errorEl.attributes('id'))
+})
+
+test('stale local error clears when parent resets modelValue to null', async () => {
+  const wrapper = setup()
+  await choose(wrapper, new File(['<svg/>'], 'a.svg', { type: 'image/svg+xml' }))
+  expect(wrapper.text()).toContain('รองรับเฉพาะไฟล์')
+  const file = png()
+  await wrapper.setProps({ modelValue: file })
+  await wrapper.setProps({ modelValue: null })
+  expect(wrapper.text()).not.toContain('รองรับเฉพาะไฟล์ JPEG, PNG, WebP, AVIF หรือ GIF')
+})
+
+test('the picture box is a label for the input', () => {
+  const wrapper = setup()
+  const id = wrapper.get('input[type="file"]').attributes('id')
+  expect(wrapper.findAll(`label[for="${id}"]`)).toHaveLength(2)
+})

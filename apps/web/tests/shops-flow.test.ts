@@ -52,6 +52,8 @@ test('no results shows the empty state', async () => {
   server.use(http.get('*/api/shops', () => HttpResponse.json([])))
   const { wrapper } = await mountApp({ path: '/?q=zzz' })
   await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  expect(wrapper.text()).toContain('ลองค้นด้วยชื่อร้านอื่น')
+  expect(wrapper.text()).toContain('ล้างคำค้นหา')
 })
 
 test('no shops at all shows the empty canteen state', async () => {
@@ -90,6 +92,10 @@ test('shop with no products shows "ร้านนี้ยังไม่มี
   )
   const { wrapper } = await mountApp({ path: '/shops/4' })
   await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านนี้ยังไม่มีเมนู'))
+  expect(wrapper.text()).toContain('ลองดูร้านอื่นก่อนนะ')
+  const link = wrapper.findAll('a').find((a) => a.text() === 'ดูร้านทั้งหมด')
+  expect(link).toBeDefined()
+  expect(link!.attributes('href')).toBe('/')
 })
 
 test('/shops/9999 (API 404) shows Not Found', async () => {
@@ -99,7 +105,9 @@ test('/shops/9999 (API 404) shows Not Found', async () => {
     ),
   )
   const { wrapper } = await mountApp({ path: '/shops/9999' })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านนี้'))
+  expect(wrapper.text()).toContain('ดูร้านทั้งหมด')
+  expect(wrapper.text()).not.toContain('ไม่พบหน้าที่ค้นหา')
 })
 
 test('/shops/abc shows Not Found without calling the API', async () => {
@@ -111,7 +119,8 @@ test('/shops/abc shows Not Found without calling the API', async () => {
     }),
   )
   const { wrapper } = await mountApp({ path: '/shops/abc' })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบหน้าที่ค้นหา'))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านนี้'))
+  expect(wrapper.text()).toContain('ดูร้านทั้งหมด')
   expect(calls).not.toHaveBeenCalled()
 })
 
@@ -186,6 +195,16 @@ test('floating bar shows count and total after adding', async () => {
   expect(bar.text()).toContain('3')
   expect(bar.text()).toContain('฿165')
   expect(bar.attributes('href')).toBe('/cart')
+  expect(bar.classes()).toEqual(
+    expect.arrayContaining([
+      'md:inset-x-auto',
+      'md:right-8',
+      'md:w-96',
+      'hover:bg-primary-hover',
+      'active:bg-primary-active',
+    ]),
+  )
+  expect(bar.get('[data-testid="cart-count"]').classes()).toContain('text-caption')
   await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1))
 })
 
@@ -259,4 +278,167 @@ test('navigating to a shop within the search debounce never stamps ?q= onto the 
   await new Promise((resolve) => setTimeout(resolve, 450))
   expect(router.currentRoute.value.fullPath).toBe('/shops/1')
   await vi.waitFor(() => expect(wrapper.text()).toContain('ข้าวมันไก่'))
+})
+
+function searchInput(wrapper: { get: (s: string) => { element: Element } }): HTMLInputElement {
+  return wrapper.get('input[type="search"]').element as HTMLInputElement
+}
+
+test('back/forward restores the search box without re-writing the URL', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก๋วย')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋วย'))
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  const replace = vi.spyOn(router, 'replace')
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  expect(replace).not.toHaveBeenCalled()
+  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+})
+
+test('back/forward cancels a pending debounce so it cannot overwrite the restored box', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/?q=ก๋วย' })
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  await wrapper.get('input[type="search"]').setValue('ข้าวมัน')
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+  await new Promise((resolve) => setTimeout(resolve, 450))
+  expect(router.currentRoute.value.query.q).toBe('ก๋วย')
+  expect(searchInput(wrapper).value).toBe('ก๋วย')
+})
+
+test('typing is not overwritten by an older ?q= while debounce is pending', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  let held = 0
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  router.beforeEach(async (to) => {
+    if (to.query.q === 'ก๋') {
+      held += 1
+      await gate
+    }
+  })
+  const input = wrapper.get('input[type="search"]')
+  await input.setValue('ก๋')
+  await vi.waitFor(() => expect(held).toBe(1))
+  await input.setValue('ก๋ว')
+  expect(searchInput(wrapper).value).toBe('ก๋ว')
+  release()
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋ว'))
+  expect(searchInput(wrapper).value).toBe('ก๋ว')
+})
+
+test('a whitespace-only entry does not stop a later navigation from syncing the box', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/' })
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  await wrapper.get('input[type="search"]').setValue(' ')
+  await vi.advanceTimersByTimeAsync(450)
+  vi.useRealTimers()
+  await router.push({ path: '/', query: { q: 'x' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('x'))
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe(''))
+})
+
+test('typing and reverting within the debounce does not stop a later back from syncing', async () => {
+  trackSearch()
+  const { wrapper, router } = await mountApp({ path: '/?q=ก๋วย' })
+  const input = wrapper.get('input[type="search"]')
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  await input.setValue('ก๋วยx')
+  await input.setValue('ก๋วย')
+  await vi.advanceTimersByTimeAsync(450)
+  vi.useRealTimers()
+  await router.push({ path: '/', query: { q: 'ข้าว' } })
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
+  router.back()
+  await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ก๋วย'))
+})
+
+test('clearing a no-result search never flashes the empty-canteen state', async () => {
+  server.use(
+    http.get('*/api/shops', async ({ request }) => {
+      const search = new URL(request.url).searchParams.get('search')
+      if (search) return HttpResponse.json([])
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      return HttpResponse.json([makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/?q=zzz' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === 'ล้างคำค้นหา')!
+    .trigger('click')
+  const flashed: boolean[] = []
+  await vi.waitFor(
+    () => {
+      flashed.push(wrapper.text().includes('ยังไม่มีร้านในโรงอาหาร'))
+      expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว')
+    },
+    { interval: 10 },
+  )
+  expect(flashed.some(Boolean)).toBe(false)
+})
+
+test('clear-search button clears ?q= and shows all shops', async () => {
+  const seen: (string | null)[] = []
+  server.use(
+    http.get('*/api/shops', ({ request }) => {
+      const search = new URL(request.url).searchParams.get('search')
+      seen.push(search)
+      return HttpResponse.json(search ? [] : [makeShop({ id: 1, name: 'ร้านก๋วยเตี๋ยว' })])
+    }),
+  )
+  const { wrapper, router } = await mountApp({ path: '/?q=zzz' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ไม่พบร้านที่ค้นหา'))
+  const clear = wrapper.findAll('button').find((b) => b.text() === 'ล้างคำค้นหา')
+  expect(clear).toBeDefined()
+  await clear!.trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBeUndefined())
+  expect(searchInput(wrapper).value).toBe('')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว'))
+})
+
+test('banner is hidden while searching and shown again after clearing', async () => {
+  trackSearch()
+  const { wrapper } = await mountApp({ path: '/' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งก่อน รับก่อน'))
+  expect(wrapper.text()).toContain('#12')
+  await wrapper.get('input[type="search"]').setValue('ก๋วย')
+  await vi.waitFor(() => expect(wrapper.text()).not.toContain('สั่งก่อน รับก่อน'))
+})
+
+test('search box wrapper shows a visible focus indicator', async () => {
+  trackSearch()
+  const { wrapper } = await mountApp({ path: '/' })
+  expect(wrapper.get('input[type="search"]').element.parentElement?.className).toContain(
+    'focus-within:outline-ring',
+  )
+})
+
+test('shop hero is capped on desktop and the cart bar is a floating box', async () => {
+  server.use(
+    http.get('*/api/shops/3', () =>
+      HttpResponse.json(
+        makeShopDetail({ id: 3, products: [makeProduct({ id: 1, name: 'แกงเขียวหวาน' })] }),
+      ),
+    ),
+  )
+  const { wrapper } = await mountApp({ path: '/shops/3' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('แกงเขียวหวาน'))
+  const hero = wrapper.get('[data-testid="shop-hero"]')
+  expect(hero.classes()).toEqual(
+    expect.arrayContaining(['md:h-72', 'md:overflow-hidden', 'md:rounded-b-3xl']),
+  )
 })

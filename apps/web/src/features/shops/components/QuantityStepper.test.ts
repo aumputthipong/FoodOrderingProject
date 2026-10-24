@@ -30,3 +30,14 @@ test('shows the count with 44px buttons when above zero', () => {
   expect(wrapper.text()).toContain('5')
   for (const button of wrapper.findAll('button')) expect(button.classes()).toContain('size-11')
 })
+
+test('press states are opaque and darker than hover', () => {
+  const wrapper = mount(QuantityStepper, { props: { modelValue: 1, label: 'ข้าว' } })
+  const minus = wrapper.get('[aria-label="ลดจำนวน ข้าว"]').classes()
+  const plus = wrapper.get('[aria-label="เพิ่มจำนวน ข้าว"]').classes()
+  expect(minus).toContain('hover:bg-muted')
+  expect(minus).toContain('active:bg-muted-active')
+  expect(plus).toContain('hover:bg-primary-hover')
+  expect(plus).toContain('active:bg-primary-active')
+  for (const cls of [...minus, ...plus]) expect(cls).not.toMatch(/bg-(primary|muted)\/\d/)
+})

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ProductFields } from '@canteen/shared'
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ChevronLeft } from '@lucide/vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import ErrorState from '@/components/ErrorState.vue'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -47,8 +48,14 @@ async function onSubmit({ fields, image }: { fields: ProductFields; image: File 
 
 <template>
   <NotFoundPage v-if="notFound" />
-  <div v-else class="flex flex-col gap-6 p-4 lg:p-8">
-    <h1 class="font-heading text-[26px] font-semibold">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
+  <div v-else class="flex flex-col gap-4">
+    <RouterLink
+      :to="{ name: 'merchant-menu' }"
+      class="-ml-2 flex min-h-11 w-fit items-center gap-1 px-2 text-sm font-medium text-primary hover:underline"
+    >
+      <ChevronLeft class="size-4" aria-hidden="true" />กลับ
+    </RouterLink>
+    <h1 class="page-title-lg">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
       <Skeleton class="h-11 w-full" />
@@ -68,6 +75,7 @@ async function onSubmit({ fields, image }: { fields: ProductFields; image: File 
       :image-required="isNew"
       :submitting="save.isPending.value"
       :server-error="serverError"
+      :cancel-to="{ name: 'merchant-menu' }"
       @submit="onSubmit"
     />
   </div>

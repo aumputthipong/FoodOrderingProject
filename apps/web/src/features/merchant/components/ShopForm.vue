@@ -3,18 +3,21 @@ import { shopFieldsSchema, type ShopFields } from '@canteen/shared'
 import { useForm } from 'vee-validate'
 import { ref, watch } from 'vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
-import { Button } from '@/components/ui/button'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { applyServerErrors } from '@/lib/form-errors'
 import { toFormSchema } from '@/lib/form-schema'
+import { cn } from '@/lib/utils'
 
 const props = defineProps<{
   initial?: { name: string; description: string; imageUrl: string | null }
   imageRequired: boolean
   submitting: boolean
   serverError?: unknown
+  cancelTo?: RouteLocationRaw
 }>()
 const emit = defineEmits<{ submit: [value: { fields: ShopFields; image: File | null }] }>()
 
@@ -57,7 +60,11 @@ const onSubmit = handleSubmit((fields) => {
 </script>
 
 <template>
-  <form class="grid max-w-xl gap-4" novalidate @submit="onSubmit">
+  <form
+    class="grid max-w-xl gap-4 rounded-card border border-border bg-card p-6"
+    novalidate
+    @submit="onSubmit"
+  >
     <FormField v-slot="{ componentField }" name="name">
       <FormItem>
         <FormLabel>ชื่อร้าน</FormLabel>
@@ -85,8 +92,16 @@ const onSubmit = handleSubmit((fields) => {
       @invalid="(message) => (imageError = message)"
     />
     <p v-if="formError" role="alert" class="text-sm text-destructive">{{ formError }}</p>
-    <Button type="submit" class="min-h-11" :disabled="submitting">
-      {{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}
-    </Button>
+    <div class="flex flex-wrap gap-3">
+      <Button type="submit" class="min-h-11" :disabled="submitting">
+        {{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}
+      </Button>
+      <RouterLink
+        v-if="cancelTo"
+        :to="cancelTo"
+        :class="cn(buttonVariants({ variant: 'outline' }), 'min-h-11')"
+        >ยกเลิก</RouterLink
+      >
+    </div>
   </form>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ShopFields } from '@canteen/shared'
+import { ChevronLeft } from '@lucide/vue'
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import ErrorState from '@/components/ErrorState.vue'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,8 +31,14 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4 lg:p-8">
-    <h1 class="font-heading text-[26px] font-semibold">ข้อมูลร้าน</h1>
+  <div class="flex flex-col gap-4">
+    <RouterLink
+      :to="{ name: 'merchant-queue' }"
+      class="-ml-2 flex min-h-11 w-fit items-center gap-1 px-2 text-sm font-medium text-primary hover:underline"
+    >
+      <ChevronLeft class="size-4" aria-hidden="true" />กลับ
+    </RouterLink>
+    <h1 class="page-title-lg">ข้อมูลร้าน</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
       <Skeleton class="h-11 w-full" />
@@ -43,6 +51,7 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
       :image-required="false"
       :submitting="update.isPending.value"
       :server-error="serverError"
+      :cancel-to="{ name: 'merchant-queue' }"
       @submit="onSubmit"
     />
   </div>
