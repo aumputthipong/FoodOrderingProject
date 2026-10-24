@@ -33,14 +33,15 @@ const isLate = computed(() => minutes.value > 10)
         <span class="font-heading text-ticket font-semibold leading-[1.1] text-primary"
           >#{{ order.id }}</span
         >
-        <span class="text-caption text-muted-foreground"
-          >{{ order.customer.firstName }} · {{ formatMobile(order.customer.mobile) }}</span
+        <span class="truncate text-caption text-muted-foreground"
+          >{{ order.customer.firstName }} ·
+          <span class="whitespace-nowrap">{{ formatMobile(order.customer.mobile) }}</span></span
         >
       </div>
-      <div class="flex flex-col items-end gap-1">
+      <div class="flex shrink-0 flex-col items-end gap-1">
         <span
           data-testid="wait-pill"
-          class="rounded-full px-2.5 py-0.5 text-caption font-semibold"
+          class="whitespace-nowrap rounded-full px-2.5 py-0.5 text-caption font-semibold"
           :class="isLate ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'"
           >{{ formatWait(minutes) }}</span
         >
