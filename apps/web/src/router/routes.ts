@@ -9,6 +9,8 @@ declare module 'vue-router' {
     roles?: Role[]
     requiresShop?: boolean
     requiresNoShop?: boolean
+    /** merchants and admins are sent to their dashboard instead */
+    staffHome?: boolean
   }
 }
 
@@ -23,7 +25,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'home',
     component: () => import('@/features/shops/pages/HomePage.vue'),
-    meta: { layout: 'customer' },
+    meta: { layout: 'customer', staffHome: true },
   },
   {
     path: '/shops/:id',

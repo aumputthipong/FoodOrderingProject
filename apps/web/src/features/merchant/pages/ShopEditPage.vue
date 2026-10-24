@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { ShopFields } from '@canteen/shared'
-import { ChevronLeft } from '@lucide/vue'
+import { Eye } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import ErrorState from '@/components/ErrorState.vue'
+import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/features/auth'
 import { useShopQuery } from '@/features/shops'
 import { toFormData } from '@/lib/form-data'
+import { cn } from '@/lib/utils'
 import ShopForm from '../components/ShopForm.vue'
 import { useUpdateShopMutation } from '../queries'
 
@@ -31,20 +33,21 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <RouterLink
-      :to="{ name: 'merchant-queue' }"
-      class="-ml-2 flex min-h-11 w-fit items-center gap-1 px-2 text-sm font-medium text-primary hover:underline"
-    >
-      <ChevronLeft class="size-4" aria-hidden="true" />กลับ
-    </RouterLink>
-    <h1 class="page-title-lg">ข้อมูลร้าน</h1>
-    <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
-    <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
-      <Skeleton class="h-11 w-full" />
-      <Skeleton class="h-28 w-full" />
-      <Skeleton class="aspect-video w-full max-w-sm" />
+  <div class="flex flex-col gap-6">
+    <div class="flex max-w-4xl flex-wrap items-end justify-between gap-4">
+      <div class="flex flex-col gap-1">
+        <h1 class="page-title-lg">ข้อมูลร้าน</h1>
+        <p class="text-muted-foreground">ชื่อ คำอธิบาย และรูปนี้คือสิ่งที่ลูกค้าเห็นในหน้าแรก</p>
+      </div>
+      <RouterLink
+        v-if="shop"
+        :to="{ name: 'shop', params: { id: shop.id } }"
+        :class="cn(buttonVariants({ variant: 'outline' }), 'min-h-11 gap-1.5')"
+        ><Eye class="size-4" aria-hidden="true" />ดูหน้าร้านของฉัน</RouterLink
+      >
     </div>
+    <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
+    <Skeleton v-else-if="!shop" class="h-96 w-full max-w-4xl rounded-card" />
     <ShopForm
       v-else
       :initial="{ name: shop.name, description: shop.description, imageUrl: shop.imageUrl }"

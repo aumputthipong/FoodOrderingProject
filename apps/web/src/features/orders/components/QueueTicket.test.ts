@@ -14,15 +14,16 @@ const item = (id: number, name: string, isDone: boolean) => ({
   isDone,
 })
 
-test('shows number, progress and per-item state', () => {
+test("shows the shop's queue number (not the order id), progress and per-item state", () => {
   const order = makeOrder({
     id: 42,
+    queueNumber: 7,
     items: [item(1, 'ผัดกระเพรา', true), item(2, 'ข้าวผัด', false)],
     totalPrice: 200,
   })
   const wrapper = mount(QueueTicket, { props: { order } })
   const text = wrapper.text()
-  expect(wrapper.get('[data-testid="queue-number"]').text()).toBe('#42')
+  expect(wrapper.get('[data-testid="queue-number"]').text()).toBe('หมายเลขคิว #7')
   expect(text).toContain('ร้านข้าวมันไก่')
   expect(text).toContain(`สั่งเมื่อ ${formatTime(order.createdAt)}`)
   expect(text).toContain('เสร็จแล้ว 1 จาก 2 รายการ')

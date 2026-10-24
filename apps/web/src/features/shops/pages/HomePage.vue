@@ -78,47 +78,45 @@ function clearSearch(): void {
 </script>
 
 <template>
-  <div>
-    <div class="bg-card px-4 pb-3.5 pt-1 md:bg-transparent md:pt-6">
-      <label class="sr-only" for="shop-search">ค้นหาร้าน</label>
-      <div
-        class="flex h-11 items-center gap-2.5 rounded-full bg-background px-3.5 text-muted-foreground focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring md:max-w-md md:bg-card"
-      >
-        <Search class="size-[18px] shrink-0" aria-hidden="true" />
-        <input
-          id="shop-search"
-          type="search"
-          name="q"
-          placeholder="ค้นหาร้านอาหาร"
-          autocomplete="off"
-          :value="input"
-          class="min-w-0 flex-1 bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-          @input="onInput"
-        />
-      </div>
-    </div>
-    <div class="flex flex-col gap-4 p-4">
-      <section
-        v-if="!search"
-        class="flex items-center justify-between gap-3 rounded-card bg-primary p-[18px] text-primary-foreground md:p-8"
-      >
-        <div class="flex flex-col gap-1">
-          <span class="font-heading text-xl font-semibold md:text-3xl">สั่งก่อน รับก่อน</span>
-          <span class="text-caption leading-normal md:text-body-sm"
-            >สั่งจากโต๊ะ แล้วดูคิวได้ในแอป</span
-          >
-        </div>
-        <span
-          class="flex shrink-0 rotate-6 flex-col items-center gap-1 rounded-xl bg-accent px-3 py-2 font-heading text-accent-foreground"
-          aria-hidden="true"
+  <div class="flex flex-col gap-4 p-4 md:gap-6 md:pt-6">
+    <section
+      aria-labelledby="home-hero-title"
+      class="relative overflow-hidden rounded-card bg-primary px-[18px] pb-[18px] pt-5 text-primary-foreground md:px-10 md:pb-9 md:pt-10"
+    >
+      <div class="relative flex max-w-xl flex-col gap-1">
+        <p id="home-hero-title" class="font-heading text-xl font-semibold md:text-3xl">
+          สั่งก่อน รับก่อน
+        </p>
+        <p class="text-caption leading-normal md:text-body-sm">สั่งจากโต๊ะ แล้วดูคิวได้ในแอป</p>
+        <label class="sr-only" for="shop-search">ค้นหาร้าน</label>
+        <div
+          class="mt-3.5 flex h-12 items-center gap-2.5 rounded-full bg-card px-4 text-muted-foreground shadow-sm focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-card md:mt-6"
         >
-          <span class="text-title font-bold leading-none">#12</span>
-          <span class="w-full border-t-2 border-dashed border-accent-foreground/40" />
-          <span class="h-1 w-8 rounded-full bg-accent-foreground/30" />
-        </span>
-      </section>
+          <Search class="size-[18px] shrink-0" aria-hidden="true" />
+          <input
+            id="shop-search"
+            type="search"
+            name="q"
+            placeholder="ค้นหาร้านอาหาร"
+            autocomplete="off"
+            :value="input"
+            class="min-w-0 flex-1 bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+            @input="onInput"
+          />
+        </div>
+      </div>
+      <span
+        class="absolute right-10 top-1/2 hidden -translate-y-1/2 rotate-6 flex-col items-center gap-1.5 rounded-2xl bg-accent px-5 py-3.5 font-heading text-accent-foreground md:flex"
+        aria-hidden="true"
+      >
+        <span class="text-[40px] font-bold leading-none">#12</span>
+        <span class="w-full border-t-2 border-dashed border-accent-foreground/40" />
+        <span class="h-1.5 w-12 rounded-full bg-accent-foreground/30" />
+      </span>
+    </section>
+    <div class="flex flex-col gap-4">
       <div class="flex items-baseline justify-between">
-        <h1 class="page-title">ร้านในโรงอาหาร</h1>
+        <h1 class="page-title">{{ search ? `ผลการค้นหา “${search}”` : 'ร้านในโรงอาหาร' }}</h1>
         <span v-if="shops" class="text-caption text-muted-foreground">{{ shops.length }} ร้าน</span>
       </div>
       <div

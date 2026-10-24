@@ -24,10 +24,11 @@ import {
 
 const TOGGLE_KEY = ['orders', 'shop', 'toggle'] as const
 
-export function useShopOrdersQuery() {
+export function useShopOrdersQuery(enabled: () => boolean = () => true) {
   const queryClient = useQueryClient()
   return useQuery({
     queryKey: queryKeys.orders.shop,
+    enabled,
     queryFn: async () => {
       const fetched = await getShopOrders()
       // a response that lands while a tick is in flight predates it (poll, focus or an earlier

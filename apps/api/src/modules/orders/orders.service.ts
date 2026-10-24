@@ -5,6 +5,7 @@ import { deleteCart, findOwnedCartForCheckout } from '../cart/cart.service'
 import { getManageableShop } from '../shops/shops.service'
 import { toOrder, toOrderItem, toShopOrder } from './orders.mapper'
 import * as repo from './orders.repository'
+import { queueDateOf } from './queue-number'
 
 const ORDER_NOT_FOUND = 'Order not found'
 const ITEM_NOT_FOUND = 'Order item not found'
@@ -32,7 +33,12 @@ export async function checkout(userId: number, cartId: number): Promise<Order> {
       ])
     }
 
-    const orderId = await repo.insertOrder({ customerId: userId, shopId: cart.shopId }, tx)
+    const queueDate = queueDateOf(new Date())
+    const queueNumber = await repo.nextQueueNumber(cart.shopId, queueDate, tx)
+    const orderId = await repo.insertOrder(
+      { customerId: userId, shopId: cart.shopId, queueDate, queueNumber },
+      tx,
+    )
     await repo.insertItems(
       orderId,
       cart.items.map((item) => ({

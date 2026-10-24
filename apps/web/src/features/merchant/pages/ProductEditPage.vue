@@ -48,20 +48,23 @@ async function onSubmit({ fields, image }: { fields: ProductFields; image: File 
 
 <template>
   <NotFoundPage v-if="notFound" />
-  <div v-else class="flex flex-col gap-4">
-    <RouterLink
-      :to="{ name: 'merchant-menu' }"
-      class="-ml-2 flex min-h-11 w-fit items-center gap-1 px-2 text-sm font-medium text-primary hover:underline"
-    >
-      <ChevronLeft class="size-4" aria-hidden="true" />กลับ
-    </RouterLink>
-    <h1 class="page-title-lg">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
-    <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
-    <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
-      <Skeleton class="h-11 w-full" />
-      <Skeleton class="h-24 w-full" />
-      <Skeleton class="h-11 w-full" />
+  <div v-else class="flex flex-col gap-6">
+    <div class="flex flex-col gap-1">
+      <nav aria-label="breadcrumb" class="text-sm">
+        <ol class="flex items-center gap-1 text-muted-foreground">
+          <li>
+            <RouterLink
+              :to="{ name: 'merchant-menu' }"
+              class="-ml-2 flex min-h-11 items-center gap-1 px-2 font-medium text-primary hover:underline"
+              ><ChevronLeft class="size-4" aria-hidden="true" />เมนูในร้าน</RouterLink
+            >
+          </li>
+        </ol>
+      </nav>
+      <h1 class="page-title-lg">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
     </div>
+    <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
+    <Skeleton v-else-if="!shop" class="h-96 w-full max-w-4xl rounded-card" />
     <ProductForm
       v-else
       :initial="

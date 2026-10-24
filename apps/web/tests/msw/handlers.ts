@@ -11,4 +11,8 @@ export const defaultHandlers = [
     ]),
   ),
   http.get(apiUrl('/api/cart'), () => HttpResponse.json([])),
+  // the merchant layout polls the queue for its waiting count on every merchant page
+  http.get(apiUrl('/api/shops/mine/orders'), () =>
+    HttpResponse.json({ waiting: [], finished: [] }),
+  ),
 ]

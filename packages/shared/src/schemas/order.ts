@@ -19,6 +19,8 @@ export const orderItemSchema = z.object({
 
 export const orderSchema = z.object({
   id: z.number().int(),
+  /** The shop's ticket number for the day, shown to customer and vendor instead of `id`. */
+  queueNumber: z.number().int().positive(),
   status: z.enum(ORDER_STATUSES),
   createdAt: z.string(),
   finishedAt: z.string().nullable(),

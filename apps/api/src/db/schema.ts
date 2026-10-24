@@ -4,6 +4,7 @@ import {
   boolean,
   char,
   check,
+  date,
   decimal,
   int,
   mysqlEnum,
@@ -111,18 +112,31 @@ export const cartItems = mysqlTable(
   ],
 )
 
-export const orders = mysqlTable('orders', {
-  id: int().primaryKey().autoincrement(),
-  customerId: int()
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  shopId: int()
-    .notNull()
-    .references(() => shops.id, { onDelete: 'cascade' }),
-  status: mysqlEnum(ORDER_STATUSES).notNull().default('waiting'),
-  createdAt: createdAt(),
-  finishedAt: timestamp(),
-})
+export const orders = mysqlTable(
+  'orders',
+  {
+    id: int().primaryKey().autoincrement(),
+    customerId: int()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    shopId: int()
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    // the shop's own ticket number, restarting at 1 each day (see queueDateOf)
+    queueDate: date({ mode: 'string' }).notNull(),
+    queueNumber: int().notNull(),
+    status: mysqlEnum(ORDER_STATUSES).notNull().default('waiting'),
+    createdAt: createdAt(),
+    finishedAt: timestamp(),
+  },
+  (table) => [
+    unique('orders_shop_id_queue_date_queue_number_unique').on(
+      table.shopId,
+      table.queueDate,
+      table.queueNumber,
+    ),
+  ],
+)
 
 export const orderItems = mysqlTable('order_items', {
   id: int().primaryKey().autoincrement(),

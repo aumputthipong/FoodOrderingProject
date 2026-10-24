@@ -26,7 +26,10 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
 
 <template>
   <div class="flex flex-col gap-6">
-    <h1 class="page-title-lg">สร้างร้านของคุณ</h1>
+    <div class="flex flex-col gap-1">
+      <h1 class="page-title-lg">สร้างร้านของคุณ</h1>
+      <p class="text-muted-foreground">ตั้งชื่อร้านและใส่รูป แล้วค่อยเพิ่มเมนูในขั้นถัดไป</p>
+    </div>
     <ShopForm
       image-required
       :submitting="create.isPending.value"

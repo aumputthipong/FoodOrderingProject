@@ -31,7 +31,7 @@ const isLate = computed(() => minutes.value > 10)
     <div class="flex items-start justify-between gap-2 px-4 pb-3 pt-4">
       <div class="flex min-w-0 flex-col gap-0.5">
         <span class="font-heading text-ticket font-semibold leading-[1.1] text-primary"
-          >#{{ order.id }}</span
+          >#{{ order.queueNumber }}</span
         >
         <span class="truncate text-caption text-muted-foreground"
           >{{ order.customer.firstName }} ·
@@ -72,7 +72,9 @@ const isLate = computed(() => minutes.value > 10)
   </article>
 
   <div v-else class="flex items-center gap-2.5 border-t border-background pt-3">
-    <span class="font-heading text-lg font-semibold text-muted-foreground">#{{ order.id }}</span>
+    <span class="font-heading text-lg font-semibold text-muted-foreground"
+      >#{{ order.queueNumber }}</span
+    >
     <span class="flex min-w-0 flex-1 flex-col">
       <span class="text-sm">{{
         order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')

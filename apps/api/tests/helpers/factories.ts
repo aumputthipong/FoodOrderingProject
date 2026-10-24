@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt'
 import type { Cart, OrderStatus, ProductStatus, Role } from '@canteen/shared'
 import { db } from '../../src/db/client'
 import { orderItems, orders, products, shops, users } from '../../src/db/schema'
+import { nextQueueNumber } from '../../src/modules/orders/orders.repository'
+import { queueDateOf } from '../../src/modules/orders/queue-number'
 import { api, auth } from './app'
 
 const DEFAULT_PASSWORD = 'Password123'
@@ -97,9 +99,11 @@ export async function createOrder(
   const createdAt = opts.createdAt ?? new Date()
   const finishedAt =
     opts.finishedAt !== undefined ? opts.finishedAt : status === 'finished' ? createdAt : null
+  const queueDate = queueDateOf(createdAt)
+  const queueNumber = await nextQueueNumber(shopId, queueDate)
   const [result] = await db
     .insert(orders)
-    .values({ customerId, shopId, status, createdAt, finishedAt })
+    .values({ customerId, shopId, queueDate, queueNumber, status, createdAt, finishedAt })
   const id = result.insertId
   if (items.length > 0) {
     await db.insert(orderItems).values(items.map((item) => ({ orderId: id, ...item })))

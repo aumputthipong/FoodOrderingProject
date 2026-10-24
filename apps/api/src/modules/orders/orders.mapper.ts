@@ -19,6 +19,7 @@ export function toOrder(row: OrderRow, itemRows: OrderItemRow[]): Order {
   const items = itemRows.map(toOrderItem)
   return {
     id: row.id,
+    queueNumber: row.queueNumber,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,

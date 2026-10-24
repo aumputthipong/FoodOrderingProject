@@ -384,7 +384,7 @@ test('finished column empty shows ยังไม่มีออเดอร์�
   wrapper.unmount()
 })
 
-test('the customer link lives in the sidebar and the tab strip, not a separate row', async () => {
+test('the own-shop preview link lives in the sidebar and the tab strip, not a separate row', async () => {
   server.use(
     http.get('*/api/shops/mine/orders', () => HttpResponse.json({ waiting: [], finished: [] })),
   )
@@ -393,8 +393,9 @@ test('the customer link lives in the sidebar and the tab strip, not a separate r
   expect(wrapper.find('[data-testid="empty-icon"] svg').exists()).toBe(true)
   const sidebar = wrapper.get('[data-testid="merchant-sidebar"]')
   const tabs = wrapper.get('[data-testid="merchant-tabs"]')
-  expect(sidebar.text()).toContain('ไปหน้าลูกค้า')
-  const customer = tabs.get('a[aria-label="ไปหน้าลูกค้า"]')
+  expect(sidebar.get('a[href="/shops/1"]').text()).toBe('ดูหน้าร้านของฉัน')
+  const customer = tabs.get('a[aria-label="ดูหน้าร้านของฉัน"]')
+  expect(customer.attributes('href')).toBe('/shops/1')
   expect(customer.classes()).toContain('size-11')
   const logoutBtn = tabs.get('button[aria-label="ออกจากระบบ"]')
   expect(logoutBtn.classes()).toContain('size-11')
@@ -403,4 +404,32 @@ test('the customer link lives in the sidebar and the tab strip, not a separate r
   expect(active.classes()).toContain('border-b-2')
   expect(active.classes()).toContain('border-primary')
   wrapper.unmount()
+})
+
+test('the sidebar shows the waiting count and the owner by name, not username', async () => {
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({ waiting: [order(), order({ id: 43 })], finished: [] }),
+    ),
+  )
+  const { wrapper } = await mountApp({
+    path: '/merchant/menu',
+    user: makeUser({
+      id: 2,
+      role: 'merchant',
+      shopId: 1,
+      username: 'merchant2',
+      firstName: 'สมศรี',
+      lastName: 'ใจดี',
+    }),
+  })
+  const sidebar = wrapper.get('[data-testid="merchant-sidebar"]')
+  await vi.waitFor(() => expect(sidebar.get('[data-testid="waiting-count"]').text()).toBe('รอทำ 2'))
+  expect(sidebar.text()).toContain('สมศรี ใจดี')
+  expect(sidebar.text()).not.toContain('merchant2')
+})
+
+test('a merchant opening the home page lands on the queue', async () => {
+  const { router } = await mountApp({ path: '/', user: merchant() })
+  expect(router.currentRoute.value.name).toBe('merchant-queue')
 })

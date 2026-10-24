@@ -98,13 +98,17 @@ const orderBase = {
   totalPrice: 100,
 }
 
+// tests that pick an id get the same queue number unless they set one
+const queueNumberFor = (overrides: Partial<Order>) => overrides.id ?? orderBase.id
+
 export function makeOrder(overrides: Partial<Order> = {}): Order {
-  return orderSchema.parse({ ...orderBase, ...overrides })
+  return orderSchema.parse({ ...orderBase, queueNumber: queueNumberFor(overrides), ...overrides })
 }
 
 export function makeShopOrder(overrides: Partial<ShopOrder> = {}): ShopOrder {
   return shopOrderSchema.parse({
     ...orderBase,
+    queueNumber: queueNumberFor(overrides),
     customer: { id: 1, firstName: 'สมชาย', mobile: '0812345678' },
     ...overrides,
   })

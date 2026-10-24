@@ -135,7 +135,7 @@ test('shop request failure shows an error with retry', async () => {
 test('merchant layout shows the shop name', async () => {
   server.use(
     http.get('*/api/shops/7', () =>
-      HttpResponse.json(makeShopDetail({ id: 7, name: 'ร้านของฉัน' })),
+      HttpResponse.json(makeShopDetail({ id: 7, name: 'ร้านป้าแดง' })),
     ),
   )
   const { wrapper } = await mountApp({
@@ -143,7 +143,7 @@ test('merchant layout shows the shop name', async () => {
     user: makeUser({ role: 'merchant', shopId: 7 }),
   })
   await vi.waitFor(() =>
-    expect(wrapper.get('[data-testid="merchant-sidebar"]').text()).toContain('ร้านของฉัน'),
+    expect(wrapper.get('[data-testid="merchant-sidebar"]').text()).toContain('ร้านป้าแดง'),
   )
 })
 
@@ -410,20 +410,23 @@ test('clear-search button clears ?q= and shows all shops', async () => {
   await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านก๋วยเตี๋ยว'))
 })
 
-test('banner is hidden while searching and shown again after clearing', async () => {
+test('the search lives in the banner; searching retitles the list as results', async () => {
   trackSearch()
   const { wrapper } = await mountApp({ path: '/' })
-  await vi.waitFor(() => expect(wrapper.text()).toContain('สั่งก่อน รับก่อน'))
-  expect(wrapper.text()).toContain('#12')
+  await vi.waitFor(() => expect(wrapper.text()).toContain('ร้านในโรงอาหาร'))
+  expect(
+    wrapper.get('section[aria-labelledby="home-hero-title"]').find('input[type="search"]').exists(),
+  ).toBe(true)
   await wrapper.get('input[type="search"]').setValue('ก๋วย')
-  await vi.waitFor(() => expect(wrapper.text()).not.toContain('สั่งก่อน รับก่อน'))
+  await vi.waitFor(() => expect(wrapper.get('h1').text()).toBe('ผลการค้นหา “ก๋วย”'))
+  expect(wrapper.text()).toContain('สั่งก่อน รับก่อน')
 })
 
 test('search box wrapper shows a visible focus indicator', async () => {
   trackSearch()
   const { wrapper } = await mountApp({ path: '/' })
   expect(wrapper.get('input[type="search"]').element.parentElement?.className).toContain(
-    'focus-within:outline-ring',
+    'focus-within:outline-card',
   )
 })
 
@@ -441,4 +444,20 @@ test('shop hero is capped on desktop and the cart bar is a floating box', async 
   expect(hero.classes()).toEqual(
     expect.arrayContaining(['md:h-72', 'md:overflow-hidden', 'md:rounded-b-3xl']),
   )
+})
+
+test('a merchant previewing a shop sees a way back to managing their shop', async () => {
+  server.use(http.get('*/api/shops/:id', () => HttpResponse.json(makeShopDetail())))
+  const { wrapper } = await mountApp({
+    path: '/shops/1',
+    user: makeUser({ role: 'merchant', shopId: 1 }),
+  })
+  const bar = wrapper.get('[data-testid="staff-preview-bar"]')
+  expect(bar.text()).toContain('คุณกำลังดูในมุมลูกค้า')
+  expect(bar.get('a').attributes('href')).toBe('/merchant/queue')
+})
+
+test('customers do not see the merchant preview bar', async () => {
+  const { wrapper } = await mountApp({ path: '/', user: makeUser() })
+  expect(wrapper.find('[data-testid="staff-preview-bar"]').exists()).toBe(false)
 })

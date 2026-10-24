@@ -102,6 +102,42 @@ describe('POST /api/orders', () => {
     expect(await db.select().from(orders)).toHaveLength(1)
   })
 
+  test('queue numbers count per shop, starting at 1', async () => {
+    const { merchant, token, a } = await setup()
+    const other = await createMerchantWithShop()
+    const c = await createProduct(other.shop.id)
+    const numbers: number[] = []
+    for (const [shopId, productId] of [
+      [merchant.shop.id, a.id],
+      [other.shop.id, c.id],
+      [merchant.shop.id, a.id],
+    ] as const) {
+      const cart = await addToCart(token, shopId, [{ productId, quantity: 1 }])
+      numbers.push((await checkout(token, cart.id)).body.queueNumber)
+    }
+    expect(numbers).toEqual([1, 1, 2])
+  })
+
+  test('concurrent checkouts at one shop get distinct queue numbers', async () => {
+    const { merchant, a } = await setup()
+    const tokens = await Promise.all([1, 2, 3].map(async () => loginAs(await createUser())))
+    const carts = await Promise.all(
+      tokens.map((t) => addToCart(t, merchant.shop.id, [{ productId: a.id, quantity: 1 }])),
+    )
+    const results = await Promise.all(tokens.map((t, i) => checkout(t, carts[i]!.id)))
+    expect(results.map((r) => r.status)).toEqual([201, 201, 201])
+    expect(results.map((r) => r.body.queueNumber).sort()).toEqual([1, 2, 3])
+  })
+
+  test('queue numbers restart each day', async () => {
+    const { merchant, customer, token, cart, a } = await setupWithCart()
+    await createOrder(customer.id, merchant.shop.id, [], { createdAt: day(1) })
+    await createOrder(customer.id, merchant.shop.id, [], { createdAt: day(1) })
+    expect((await checkout(token, cart.id)).body.queueNumber).toBe(1)
+    const again = await addToCart(token, merchant.shop.id, [{ productId: a.id, quantity: 1 }])
+    expect((await checkout(token, again.id)).body.queueNumber).toBe(2)
+  })
+
   test('checkout fails with 400 when a product became unavailable, cart kept', async () => {
     const { token, cart, b } = await setupWithCart()
     await db.update(products).set({ status: 'not-available' }).where(eq(products.id, b.id))
