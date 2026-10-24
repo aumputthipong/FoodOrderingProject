@@ -84,6 +84,7 @@
     input,
     textarea,
     [role='tab'],
+    [role='tabpanel'],
     [role='switch'],
     [role='checkbox'],
     [role='radio']

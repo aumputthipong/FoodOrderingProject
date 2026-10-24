@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil } from '@lucide/vue'
+import { Pencil, UtensilsCrossed } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import ErrorState from '@/components/ErrorState.vue'
@@ -31,7 +31,7 @@ function toggle(productId: number, open: boolean) {
 <template>
   <div class="flex max-w-3xl flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <h1 class="font-heading text-display font-semibold">เมนูในร้าน</h1>
+      <h1 class="page-title-lg">เมนูในร้าน</h1>
       <RouterLink :to="{ name: 'merchant-menu-new' }" :class="cn(buttonVariants(), 'min-h-11')"
         >เพิ่มเมนู</RouterLink
       >
@@ -44,6 +44,7 @@ function toggle(productId: number, open: boolean) {
     </div>
     <EmptyState
       v-else-if="!shop.products.length"
+      :icon="UtensilsCrossed"
       title="ยังไม่มีเมนู"
       description="เพิ่มเมนูแรกของร้านได้เลย"
     >
@@ -81,12 +82,11 @@ function toggle(productId: number, open: boolean) {
           <PriceTag :value="product.price" class="text-sm text-primary" />
         </div>
         <div class="flex items-center gap-2">
-          <label :for="`product-${product.id}-switch`" class="text-sm">{{
-            product.status === 'available' ? 'เปิดขาย' : 'หมดชั่วคราว'
-          }}</label>
+          <label :for="`product-${product.id}-switch`" class="flex min-h-11 items-center text-sm"
+            >เปิดขาย <span class="sr-only">{{ product.name }}</span></label
+          >
           <Switch
             :id="`product-${product.id}-switch`"
-            :aria-label="`เปิดขาย ${product.name}`"
             :model-value="product.status === 'available'"
             @update:model-value="(open) => toggle(product.id, open === true)"
           />

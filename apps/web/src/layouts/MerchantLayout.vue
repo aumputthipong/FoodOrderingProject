@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LogOut, Store } from '@lucide/vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
 import { useShopQuery } from '@/features/shops'
@@ -27,32 +28,35 @@ async function logout(): Promise<void> {
       <nav
         data-testid="merchant-tabs"
         aria-label="เมนูร้าน"
-        class="flex items-center gap-1 overflow-x-auto border-b border-border bg-card px-2 lg:hidden"
+        class="flex items-center border-b border-border bg-card px-1 lg:hidden"
       >
         <RouterLink
           v-for="link in merchantLinks"
           :key="link.name"
           :to="{ name: link.name }"
-          class="flex min-h-11 shrink-0 items-center px-3 text-sm transition-colors"
+          class="-mb-px flex min-h-11 shrink-0 items-center border-b-2 px-2.5 text-sm transition-colors hover:text-foreground"
           :class="
             isMerchantLinkActive(link, route.name)
-              ? 'font-semibold text-primary'
-              : 'text-muted-foreground'
+              ? 'border-primary font-semibold text-primary-hover'
+              : 'border-transparent text-muted-foreground'
           "
           :aria-current="isMerchantLinkActive(link, route.name) ? 'page' : undefined"
           >{{ link.label }}</RouterLink
         >
         <RouterLink
           :to="{ name: 'home' }"
-          class="flex min-h-11 shrink-0 items-center px-3 text-sm text-muted-foreground transition-colors"
-          >ไปหน้าลูกค้า</RouterLink
+          aria-label="ไปหน้าลูกค้า"
+          class="ml-auto flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
         >
+          <Store class="size-5" aria-hidden="true" />
+        </RouterLink>
         <button
           type="button"
-          class="ml-auto flex min-h-11 shrink-0 items-center px-3 text-sm text-muted-foreground transition-colors"
+          aria-label="ออกจากระบบ"
+          class="flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
           @click="logout"
         >
-          ออกจากระบบ
+          <LogOut class="size-5" aria-hidden="true" />
         </button>
       </nav>
       <main class="min-w-0 flex-1 p-4 pb-12 lg:p-8"><slot /></main>

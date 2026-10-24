@@ -29,7 +29,7 @@ function onChange(itemId: number, quantity: number): void {
       <h2 class="min-w-0 flex-1 text-body-sm font-semibold">{{ cart.shop.name }}</h2>
       <RouterLink
         :to="{ name: 'shop', params: { id: cart.shop.id } }"
-        class="flex min-h-11 items-center text-caption font-medium text-primary"
+        class="flex min-h-11 items-center text-caption font-medium text-primary transition-colors hover:text-primary-hover"
         >เพิ่มเมนู</RouterLink
       >
     </div>
@@ -38,7 +38,7 @@ function onChange(itemId: number, quantity: number): void {
       :key="item.id"
       class="flex items-center gap-2.5 border-t border-background pt-3"
     >
-      <div class="size-[52px] flex-none overflow-hidden rounded-lg">
+      <div class="size-[52px] flex-none overflow-hidden rounded-thumb">
         <ImageWithFallback :src="item.imageUrl" :alt="item.name" ratio="1/1" />
       </div>
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -55,7 +55,8 @@ function onChange(itemId: number, quantity: number): void {
     <button
       type="button"
       :disabled="busy"
-      class="flex min-h-12 items-center justify-between rounded-xl bg-primary px-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover active:bg-primary-active disabled:opacity-50"
+      :aria-busy="ordering ? true : undefined"
+      class="flex min-h-12 items-center justify-between rounded-xl bg-primary px-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-foreground active:bg-primary-active disabled:opacity-50"
       @click="emit('checkout', cart.id)"
     >
       <span v-if="ordering" class="flex items-center gap-2">

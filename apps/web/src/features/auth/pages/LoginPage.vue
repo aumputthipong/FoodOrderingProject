@@ -43,7 +43,7 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="font-heading text-xl">เข้าสู่ระบบ</CardTitle>
+      <CardTitle class="page-title">เข้าสู่ระบบ</CardTitle>
       <p v-if="hasRedirect" class="text-body-sm text-muted-foreground">เข้าสู่ระบบเพื่อสั่งอาหาร</p>
     </CardHeader>
     <CardContent>

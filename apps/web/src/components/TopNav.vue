@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 defineProps<{ cartCount: number; user: User | null }>()
 
 const linkClass =
-  'flex min-h-11 items-center rounded-md px-3 text-sm text-muted-foreground hover:text-foreground'
+  'flex min-h-11 items-center rounded-md px-3 text-sm text-muted-foreground transition-colors hover:text-foreground'
 const activeClass = 'font-semibold !text-primary'
 </script>
 
@@ -47,7 +47,7 @@ const activeClass = 'font-semibold !text-primary'
       <RouterLink
         v-if="user"
         :to="{ name: 'account' }"
-        class="flex min-h-11 items-center gap-2 rounded-full bg-muted px-3 text-sm font-medium hover:bg-muted-active"
+        class="flex min-h-11 items-center gap-2 rounded-full bg-muted px-3 text-sm font-medium transition-colors hover:bg-muted-active"
       >
         <span
           aria-hidden="true"

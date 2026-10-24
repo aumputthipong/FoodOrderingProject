@@ -68,7 +68,7 @@ const finished = computed(() => props.order.status === 'finished')
         aria-valuemin="0"
         aria-valuemax="100"
         :aria-valuenow="percent"
-        class="h-1.5 overflow-hidden rounded-[3px] bg-muted"
+        class="h-1.5 overflow-hidden rounded-full bg-muted"
       >
         <div class="h-full bg-primary" :style="{ width: `${percent}%` }"></div>
       </div>
@@ -99,7 +99,7 @@ const finished = computed(() => props.order.status === 'finished')
     </div>
     <div
       v-if="finished"
-      class="flex items-center justify-center gap-1.5 bg-success/10 px-4 py-3 text-body-sm font-semibold text-success"
+      class="flex items-center justify-center gap-1.5 bg-success/5 px-4 py-3 text-body-sm font-semibold text-success"
     >
       ✓ พร้อมรับที่ร้าน
     </div>

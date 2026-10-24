@@ -29,6 +29,7 @@ export function formatMobile(mobile: string): string {
 
 export function waitMinutes(createdAt: string, now: Date | number): number {
   const elapsed = Number(now) - new Date(createdAt).getTime()
+  if (!Number.isFinite(elapsed)) return 0
   return Math.max(0, Math.floor(elapsed / 60000))
 }
 

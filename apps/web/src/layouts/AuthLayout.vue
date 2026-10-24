@@ -15,7 +15,7 @@ import AppLogo from '@/components/AppLogo.vue'
     <main class="w-full max-w-sm"><slot /></main>
     <RouterLink
       :to="{ name: 'home' }"
-      class="inline-flex min-h-11 items-center gap-1 text-body-sm text-muted-foreground"
+      class="inline-flex min-h-11 items-center gap-1 text-body-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       <ChevronLeft class="size-4" aria-hidden="true" />
       กลับไปเลือกร้าน

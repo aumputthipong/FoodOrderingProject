@@ -304,7 +304,7 @@ test('เมนูในร้าน link is active on the edit-menu page', asyn
   wrapper.unmount()
 })
 
-test('sold-out menu row shows หมดชั่วคราว and the switch label follows state', async () => {
+test('sold-out menu row shows หมดชั่วคราว and the switch label stays a static name', async () => {
   serveShop(
     makeShopDetail({
       products: [
@@ -328,8 +328,8 @@ test('sold-out menu row shows หมดชั่วคราว and the switch l
   const [open, soldOut] = wrapper.findAll('li')
   expect(open!.text()).toContain('เปิดขาย')
   expect(open!.text()).not.toContain('หมดชั่วคราว')
-  expect(soldOut!.text()).toContain('หมดชั่วคราว')
-  expect(soldOut!.text()).not.toContain('เปิดขาย')
+  expect(soldOut!.text().match(/หมดชั่วคราว/g)).toHaveLength(1)
+  expect(soldOut!.text()).toContain('เปิดขาย')
   expect(
     soldOut!.get('[data-testid="image-fallback"], img').element.closest('.grayscale'),
   ).not.toBeNull()
@@ -337,10 +337,14 @@ test('sold-out menu row shows หมดชั่วคราว and the switch l
   expect(soldOut!.get('span.truncate').classes()).toContain('text-muted-foreground')
   expect(open!.get('span.truncate').classes()).not.toContain('text-muted-foreground')
   expect(soldOut!.classes()).toContain('flex-wrap')
-  expect(soldOut!.get('[role="switch"]').attributes('aria-label')).toBe('เปิดขาย น้ำเปล่า')
   const switchEl = soldOut!.get('[role="switch"]')
+  const label = soldOut!.get(`label[for="${switchEl.attributes('id')}"]`)
+  expect(label.text()).toBe('เปิดขาย น้ำเปล่า')
+  expect(label.text().startsWith('เปิดขาย')).toBe(true)
+  expect(label.classes()).toContain('min-h-11')
+  expect(switchEl.attributes('aria-label')).toBeUndefined()
   await switchEl.trigger('click')
-  await vi.waitFor(() => expect(soldOut!.text()).toContain('เปิดขาย'))
+  await vi.waitFor(() => expect(soldOut!.text()).not.toContain('หมดชั่วคราว'))
   release()
   wrapper.unmount()
 })

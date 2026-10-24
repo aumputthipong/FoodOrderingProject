@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ClipboardList } from '@lucide/vue'
 import { useIntervalFn, useNow } from '@vueuse/core'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'
@@ -45,7 +46,7 @@ function busy(orderId: number): boolean {
   <div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div class="flex flex-col gap-1">
-        <h1 class="font-heading text-display font-semibold">คิวออเดอร์</h1>
+        <h1 class="page-title-lg">คิวออเดอร์</h1>
         <p class="text-muted-foreground">คิวเก่าอยู่ก่อน ติ๊กทีละรายการเมื่อทำเสร็จ</p>
       </div>
       <div v-if="data" class="flex gap-2.5">
@@ -65,6 +66,7 @@ function busy(orderId: number): boolean {
     </div>
     <EmptyState
       v-else-if="isEmpty"
+      :icon="ClipboardList"
       title="ยังไม่มีออเดอร์"
       description="ออเดอร์ใหม่จะแสดงที่นี่อัตโนมัติ"
     />

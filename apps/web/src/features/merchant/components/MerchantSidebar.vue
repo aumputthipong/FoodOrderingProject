@@ -41,7 +41,7 @@ const route = useRoute()
         class="flex h-11 items-center rounded-thumb px-3 transition-colors hover:text-foreground"
         :class="
           isMerchantLinkActive(link, route.name)
-            ? 'bg-primary/10 font-semibold text-primary hover:text-primary'
+            ? 'bg-primary/10 font-semibold text-primary-hover hover:text-primary-hover'
             : 'text-muted-foreground'
         "
         :aria-current="isMerchantLinkActive(link, route.name) ? 'page' : undefined"

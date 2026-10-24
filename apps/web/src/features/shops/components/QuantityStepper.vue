@@ -40,7 +40,7 @@ const buttonClass = 'flex size-11 items-center justify-center rounded-full disab
       type="button"
       :disabled="disabled"
       :aria-label="`เพิ่มจำนวน ${label}`"
-      :class="`${buttonClass} bg-primary text-primary-foreground transition-colors hover:bg-primary-hover active:bg-primary-active`"
+      :class="`${buttonClass} bg-primary text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-foreground active:bg-primary-active`"
       @click="change(1)"
     >
       <Plus class="size-5" aria-hidden="true" />

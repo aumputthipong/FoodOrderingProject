@@ -55,7 +55,7 @@ async function onSubmit({ fields, image }: { fields: ProductFields; image: File 
     >
       <ChevronLeft class="size-4" aria-hidden="true" />กลับ
     </RouterLink>
-    <h1 class="font-heading text-display font-semibold">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
+    <h1 class="page-title-lg">{{ isNew ? 'เพิ่มเมนู' : 'แก้ไขเมนู' }}</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
       <Skeleton class="h-11 w-full" />

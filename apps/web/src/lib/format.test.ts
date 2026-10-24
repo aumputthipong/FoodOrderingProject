@@ -28,6 +28,10 @@ test('waitMinutes floors and never goes negative', () => {
   expect(waitMinutes('2026-10-23T05:00:00Z', new Date(t + 5 * 60_000))).toBe(5)
 })
 
+test('waitMinutes treats an invalid createdAt as zero', () => {
+  expect(waitMinutes('not-a-date', Date.now())).toBe(0)
+})
+
 test('formatWait', () => {
   expect(formatWait(0)).toBe('เพิ่งสั่ง')
   expect(formatWait(12)).toBe('รอ 12 นาที')

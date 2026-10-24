@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, SearchX } from '@lucide/vue'
+import { Search, SearchX, Store } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
@@ -151,7 +151,11 @@ function clearSearch(): void {
           <Button variant="outline" @click="clearSearch">ล้างคำค้นหา</Button>
         </template>
       </EmptyState>
-      <EmptyState v-else-if="shops && shops.length === 0" title="ยังไม่มีร้านในโรงอาหาร" />
+      <EmptyState
+        v-else-if="shops && shops.length === 0"
+        :icon="Store"
+        title="ยังไม่มีร้านในโรงอาหาร"
+      />
       <div v-else class="grid grid-cols-1 gap-2.5 md:grid-cols-3 md:gap-4">
         <ShopCard v-for="shop in shops" :key="shop.id" :shop="shop" />
       </div>

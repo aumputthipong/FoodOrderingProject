@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ShoppingCart } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -49,6 +50,7 @@ function onCheckout(cartId: number): void {
     </template>
     <EmptyState
       v-else-if="carts.length === 0 && !ordered && !checkout.isPending.value"
+      :icon="ShoppingCart"
       title="ตะกร้ายังว่าง"
       description="เลือกเมนูจากร้านในโรงอาหารได้เลย"
     >

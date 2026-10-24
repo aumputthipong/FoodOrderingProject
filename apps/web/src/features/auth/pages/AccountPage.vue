@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { formatMobile } from '@/lib/format'
 import { nameInitial } from '@/lib/initial'
 import { useAuthStore } from '../index'
 
@@ -26,7 +27,7 @@ const rows = computed(() => {
     { label: 'ชื่อ', value: `${user.firstName} ${user.lastName}` },
     { label: 'ชื่อผู้ใช้', value: user.username },
     { label: 'อีเมล', value: user.email },
-    { label: 'เบอร์มือถือ', value: user.mobile },
+    { label: 'เบอร์มือถือ', value: formatMobile(user.mobile) },
     { label: 'ประเภทบัญชี', value: ROLE_LABELS[user.role] },
   ]
 })

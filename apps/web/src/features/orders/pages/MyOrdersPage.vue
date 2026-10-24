@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Ticket } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import ErrorState from '@/components/ErrorState.vue'
@@ -10,7 +11,7 @@ import { useMyOrdersQuery } from '../queries'
 
 const { data, isPending, error, refetch } = useMyOrdersQuery()
 const triggerClass =
-  'h-11 flex-none rounded-none border-0 border-b-[2.5px] border-transparent bg-transparent px-0 text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none'
+  'h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none'
 </script>
 
 <template>
@@ -37,6 +38,7 @@ const triggerClass =
       >
         <EmptyState
           v-if="data[tab].length === 0 && tab === 'waiting'"
+          :icon="Ticket"
           title="ยังไม่มีคิวที่กำลังทำ"
           description="สั่งอาหารแล้วคิวจะแสดงที่นี่"
         >
@@ -46,7 +48,7 @@ const triggerClass =
             </Button>
           </template>
         </EmptyState>
-        <EmptyState v-else-if="data[tab].length === 0" title="ยังไม่มีคิวที่เสร็จ" />
+        <EmptyState v-else-if="data[tab].length === 0" :icon="Ticket" title="ยังไม่มีคิวที่เสร็จ" />
         <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <QueueTicket v-for="order in data[tab]" :key="order.id" :order="order" />
         </div>

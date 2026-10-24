@@ -38,7 +38,7 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
     >
       <ChevronLeft class="size-4" aria-hidden="true" />กลับ
     </RouterLink>
-    <h1 class="font-heading text-display font-semibold">ข้อมูลร้าน</h1>
+    <h1 class="page-title-lg">ข้อมูลร้าน</h1>
     <ErrorState v-if="error && !shop" :error="error" @retry="refetch()" />
     <div v-else-if="!shop" class="flex max-w-xl flex-col gap-4">
       <Skeleton class="h-11 w-full" />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ShoppingCart } from '@lucide/vue'
+import { ChevronLeft, ShoppingCart, UtensilsCrossed } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
@@ -90,6 +90,7 @@ const notFound = computed(
       <h2 class="mt-1 font-heading text-body-sm font-semibold">เมนู</h2>
       <EmptyState
         v-if="shop.products.length === 0"
+        :icon="UtensilsCrossed"
         title="ร้านนี้ยังไม่มีเมนู"
         description="ลองดูร้านอื่นก่อนนะ"
       >
@@ -114,7 +115,7 @@ const notFound = computed(
       v-if="itemCount > 0"
       data-testid="cart-bar"
       :to="{ name: 'cart' }"
-      class="fixed inset-x-4 bottom-20 z-30 mx-auto flex min-h-14 max-w-5xl items-center justify-between gap-3 rounded-2xl bg-primary px-4 text-primary-foreground shadow-lg transition-colors hover:bg-primary-hover active:bg-primary-active md:inset-x-auto md:bottom-6 md:right-8 md:mx-0 md:w-96"
+      class="fixed inset-x-4 bottom-20 z-30 mx-auto flex min-h-14 max-w-5xl items-center justify-between gap-3 rounded-2xl bg-primary px-4 text-primary-foreground shadow-lg transition-colors hover:bg-primary-hover focus-visible:outline-foreground active:bg-primary-active md:inset-x-auto md:bottom-6 md:right-8 md:mx-0 md:w-96"
     >
       <span class="flex items-center gap-3 font-semibold">
         <ShoppingCart class="size-5" aria-hidden="true" />
