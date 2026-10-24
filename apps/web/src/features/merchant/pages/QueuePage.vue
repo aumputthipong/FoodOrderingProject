@@ -73,7 +73,7 @@ function busy(orderId: number): boolean {
     <div v-else class="flex flex-col gap-6 lg:flex-row lg:items-start">
       <section
         aria-label="รอทำ"
-        class="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 lg:flex-1"
+        class="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 lg:flex-1"
       >
         <OrderCard
           v-for="order in data.waiting"
