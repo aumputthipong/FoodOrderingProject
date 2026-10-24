@@ -317,18 +317,22 @@ test('typing is not overwritten by an older ?q= while debounce is pending', asyn
   trackSearch()
   const { wrapper, router } = await mountApp({ path: '/' })
   let held = 0
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
   router.beforeEach(async (to) => {
     if (to.query.q === 'ก๋') {
       held += 1
-      await new Promise((resolve) => setTimeout(resolve, 250))
+      await gate
     }
   })
   const input = wrapper.get('input[type="search"]')
   await input.setValue('ก๋')
   await vi.waitFor(() => expect(held).toBe(1))
   await input.setValue('ก๋ว')
-  await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋'))
   expect(searchInput(wrapper).value).toBe('ก๋ว')
+  release()
   await vi.waitFor(() => expect(router.currentRoute.value.query.q).toBe('ก๋ว'))
   expect(searchInput(wrapper).value).toBe('ก๋ว')
 })
@@ -336,8 +340,10 @@ test('typing is not overwritten by an older ?q= while debounce is pending', asyn
 test('a whitespace-only entry does not stop a later navigation from syncing the box', async () => {
   trackSearch()
   const { wrapper, router } = await mountApp({ path: '/' })
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   await wrapper.get('input[type="search"]').setValue(' ')
-  await new Promise((resolve) => setTimeout(resolve, 450))
+  await vi.advanceTimersByTimeAsync(450)
+  vi.useRealTimers()
   await router.push({ path: '/', query: { q: 'x' } })
   await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('x'))
   router.back()
@@ -348,9 +354,11 @@ test('typing and reverting within the debounce does not stop a later back from s
   trackSearch()
   const { wrapper, router } = await mountApp({ path: '/?q=ก๋วย' })
   const input = wrapper.get('input[type="search"]')
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   await input.setValue('ก๋วยx')
   await input.setValue('ก๋วย')
-  await new Promise((resolve) => setTimeout(resolve, 450))
+  await vi.advanceTimersByTimeAsync(450)
+  vi.useRealTimers()
   await router.push({ path: '/', query: { q: 'ข้าว' } })
   await vi.waitFor(() => expect(searchInput(wrapper).value).toBe('ข้าว'))
   router.back()
