@@ -303,3 +303,69 @@ test('เมนูในร้าน link is active on the edit-menu page', asyn
   expect(queue?.attributes('aria-current')).toBeUndefined()
   wrapper.unmount()
 })
+
+test('sold-out menu row shows หมดชั่วคราว and the switch label follows state', async () => {
+  serveShop(
+    makeShopDetail({
+      products: [
+        makeProduct({ id: 5, name: 'ข้าวมันไก่', status: 'available' }),
+        makeProduct({ id: 6, name: 'น้ำเปล่า', status: 'not-available' }),
+      ],
+    }),
+  )
+  let release: () => void = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  server.use(
+    http.patch('*/api/products/:id/status', async () => {
+      await gate
+      return HttpResponse.json(makeProduct({ id: 6, status: 'available' }))
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/menu', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.findAll('li')).toHaveLength(2))
+  const [open, soldOut] = wrapper.findAll('li')
+  expect(open!.text()).toContain('เปิดขาย')
+  expect(open!.text()).not.toContain('หมดชั่วคราว')
+  expect(soldOut!.text()).toContain('หมดชั่วคราว')
+  expect(soldOut!.text()).not.toContain('เปิดขาย')
+  expect(soldOut!.get('[role="switch"]').attributes('aria-label')).toBe('เปิดขาย น้ำเปล่า')
+  const switchEl = soldOut!.get('[role="switch"]')
+  await switchEl.trigger('click')
+  await vi.waitFor(() => expect(soldOut!.text()).toContain('เปิดขาย'))
+  release()
+  wrapper.unmount()
+})
+
+test('product form cancel returns to the menu', async () => {
+  serveShop()
+  const { wrapper, router } = await mountApp({ path: '/merchant/menu/new', user: merchant() })
+  const cancel = wrapper.findAll('a').find((a) => a.text() === 'ยกเลิก')
+  expect(cancel).toBeDefined()
+  expect(wrapper.findAll('a').some((a) => a.text() === 'กลับ')).toBe(true)
+  await cancel!.trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('merchant-menu'))
+  wrapper.unmount()
+})
+
+test('shop edit cancel returns to the queue and create shop has no cancel', async () => {
+  serveShop()
+  const edit = await mountApp({ path: '/merchant/shop', user: merchant() })
+  await vi.waitFor(() =>
+    expect(edit.wrapper.findAll('a').some((a) => a.text() === 'ยกเลิก')).toBe(true),
+  )
+  await edit.wrapper
+    .findAll('a')
+    .find((a) => a.text() === 'ยกเลิก')!
+    .trigger('click')
+  await vi.waitFor(() => expect(edit.router.currentRoute.value.name).toBe('merchant-queue'))
+  edit.wrapper.unmount()
+})
+
+test('menu empty state offers the first-menu description', async () => {
+  serveShop(makeShopDetail({ products: [] }))
+  const { wrapper } = await mountApp({ path: '/merchant/menu', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('เพิ่มเมนูแรกของร้านได้เลย'))
+  wrapper.unmount()
+})

@@ -26,7 +26,7 @@ async function onSubmit({ fields, image }: { fields: ShopFields; image: File | n
 
 <template>
   <div class="flex flex-col gap-6">
-    <h1 class="font-heading text-[26px] font-semibold">สร้างร้านของคุณ</h1>
+    <h1 class="font-heading text-display font-semibold">สร้างร้านของคุณ</h1>
     <ShopForm
       image-required
       :submitting="create.isPending.value"

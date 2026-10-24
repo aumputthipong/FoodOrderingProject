@@ -51,6 +51,7 @@ watch(
   (file) => {
     if (objectUrl.value) URL.revokeObjectURL(objectUrl.value)
     objectUrl.value = file ? URL.createObjectURL(file) : null
+    if (!file) localError.value = null
   },
   { immediate: true },
 )
@@ -61,6 +62,9 @@ onBeforeUnmount(() => {
 
 const previewSrc = computed(() => objectUrl.value ?? props.currentUrl)
 const shownError = computed(() => localError.value ?? props.error)
+const hintId = `${inputId}-hint`
+const errorId = `${inputId}-error`
+const describedBy = computed(() => (shownError.value ? `${hintId} ${errorId}` : hintId))
 
 function reject(message: string) {
   localError.value = message
@@ -88,24 +92,32 @@ function onChange(event: Event) {
 <template>
   <div class="space-y-2">
     <label :for="inputId" class="text-sm font-medium text-foreground">{{ label }}</label>
-    <div
+    <label
+      :for="inputId"
       :style="{ aspectRatio: ratio }"
-      class="flex w-full max-w-sm items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10"
+      class="flex w-full max-w-56 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10 transition-colors hover:bg-primary/15 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground"
     >
       <img v-if="previewSrc" :src="previewSrc" alt="" class="size-full object-cover" />
       <ImagePlus v-else class="size-8 text-primary" aria-hidden="true" />
-    </div>
-    <input
-      :id="inputId"
-      ref="input"
-      type="file"
-      class="sr-only"
-      :accept="ACCEPTED_IMAGE_TYPES.join(',')"
-      @change="onChange"
-    />
-    <Button type="button" variant="outline" @click="input?.click()">
+      <input
+        :id="inputId"
+        ref="input"
+        type="file"
+        class="sr-only"
+        :accept="ACCEPTED_IMAGE_TYPES.join(',')"
+        :aria-describedby="describedBy"
+        :aria-invalid="shownError ? 'true' : undefined"
+        @change="onChange"
+      />
+    </label>
+    <p :id="hintId" class="text-caption text-muted-foreground">
+      รองรับ JPEG, PNG, WebP, AVIF หรือ GIF ไม่เกิน {{ maxMb }} MB
+    </p>
+    <Button type="button" variant="outline" class="min-h-11" @click="input?.click()">
       {{ previewSrc ? 'เปลี่ยนรูป' : 'เลือกรูป' }}
     </Button>
-    <p v-if="shownError" role="alert" class="text-sm text-destructive">{{ shownError }}</p>
+    <p v-if="shownError" :id="errorId" role="alert" class="text-sm text-destructive">
+      {{ shownError }}
+    </p>
   </div>
 </template>
