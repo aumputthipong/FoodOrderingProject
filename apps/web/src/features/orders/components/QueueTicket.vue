@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Order } from '@canteen/shared'
-import { Check } from '@lucide/vue'
+import { Check, CircleCheck } from '@lucide/vue'
 import { computed } from 'vue'
 import PriceTag from '@/components/PriceTag.vue'
 import { formatTime } from '@/lib/format'
@@ -25,15 +25,14 @@ const finished = computed(() => props.order.status === 'finished')
   >
     <div class="flex items-start justify-between gap-3 px-[18px] pb-4 pt-[18px]">
       <div class="flex min-w-0 flex-col gap-0.5">
-        <span class="text-caption text-muted-foreground">หมายเลขคิว</span>
+        <span class="text-body-sm font-semibold">{{ order.shop.name }}</span>
         <span
           data-testid="queue-number"
           class="font-heading text-ticket font-semibold leading-[1.1] text-primary"
-          >#{{ order.id }}</span
+          ><span class="sr-only">หมายเลขคิว </span>#{{ order.queueNumber }}</span
         >
-        <span class="text-body-sm font-semibold">{{ order.shop.name }}</span>
         <span class="text-caption text-muted-foreground"
-          >สั่งเมื่อ {{ formatTime(order.createdAt) }}</span
+          >คิวของร้านนี้ · สั่งเมื่อ {{ formatTime(order.createdAt) }}</span
         >
       </div>
       <div class="flex flex-col items-end gap-1.5">
@@ -101,7 +100,7 @@ const finished = computed(() => props.order.status === 'finished')
       v-if="finished"
       class="flex items-center justify-center gap-1.5 bg-success/5 px-4 py-3 text-body-sm font-semibold text-success"
     >
-      ✓ พร้อมรับที่ร้าน
+      <CircleCheck class="size-4" aria-hidden="true" />พร้อมรับที่ร้าน
     </div>
   </article>
 </template>

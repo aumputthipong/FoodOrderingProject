@@ -20,6 +20,11 @@ test.each([
   ['/merchant/queue', adminWithShop, true],
   ['/shops/3', null, true],
   ['/', null, true],
+  ['/', customer, true],
+  ['/', merchantWithShop, { name: 'merchant-queue' }],
+  ['/?q=ข้าว', adminWithShop, { name: 'merchant-queue' }],
+  ['/login', merchantWithShop, { name: 'merchant-queue' }],
+  ['/shops/3', merchantWithShop, true],
 ])('%s as %o', (path, user, expected) =>
   expect(resolveGuard(router.resolve(path), user)).toEqual(expected),
 )

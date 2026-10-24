@@ -28,11 +28,14 @@ const props = withDefaults(
     error?: string
     maxMb?: number
     ratio?: '16/10' | '1/1' | '16/9'
+    /** sizes the preview box; forms with a dedicated image column let it fill the column */
+    previewClass?: string
   }>(),
   {
     currentUrl: null,
     error: undefined,
     ratio: '16/9',
+    previewClass: 'max-w-56',
     maxMb: defaultMaxMb(),
   },
 )
@@ -95,7 +98,8 @@ function onChange(event: Event) {
     <label
       :for="inputId"
       :style="{ aspectRatio: ratio }"
-      class="flex w-full max-w-56 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10 transition-colors hover:bg-primary/15 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground"
+      :class="previewClass"
+      class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-primary/10 transition-colors hover:bg-primary/15 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground"
     >
       <img v-if="previewSrc" :src="previewSrc" alt="" class="size-full object-cover" />
       <ImagePlus v-else class="size-8 text-primary" aria-hidden="true" />

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 const props = defineProps<{
   src: string | null
   alt: string
-  ratio: '16/10' | '1/1' | '16/9'
+  ratio: '16/10' | '1/1' | '16/9' | '4/3'
   class?: string
 }>()
 

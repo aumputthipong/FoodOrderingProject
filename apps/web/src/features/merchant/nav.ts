@@ -1,12 +1,21 @@
+import { ClipboardList, Store, UtensilsCrossed } from '@lucide/vue'
+import type { Component } from 'vue'
+
 export const merchantLinks = [
-  { name: 'merchant-queue', label: 'คิวออเดอร์', match: ['merchant-queue'] },
+  { name: 'merchant-queue', label: 'คิวออเดอร์', icon: ClipboardList, match: ['merchant-queue'] },
   {
     name: 'merchant-menu',
     label: 'เมนูในร้าน',
+    icon: UtensilsCrossed,
     match: ['merchant-menu', 'merchant-menu-new', 'merchant-menu-edit'],
   },
-  { name: 'merchant-shop', label: 'ข้อมูลร้าน', match: ['merchant-shop'] },
-] as const satisfies readonly { name: string; label: string; match: readonly string[] }[]
+  { name: 'merchant-shop', label: 'ข้อมูลร้าน', icon: Store, match: ['merchant-shop'] },
+] as const satisfies readonly {
+  name: string
+  label: string
+  icon: Component
+  match: readonly string[]
+}[]
 
 export function isMerchantLinkActive(
   link: { match: readonly string[] },

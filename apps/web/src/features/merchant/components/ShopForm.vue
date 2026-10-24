@@ -61,38 +61,43 @@ const onSubmit = handleSubmit((fields) => {
 
 <template>
   <form
-    class="grid max-w-xl gap-4 rounded-card border border-border bg-card p-6"
+    class="grid max-w-4xl gap-x-10 gap-y-6 rounded-card border border-border bg-card p-5 md:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]"
     novalidate
     @submit="onSubmit"
   >
-    <FormField v-slot="{ componentField }" name="name">
-      <FormItem>
-        <FormLabel>ชื่อร้าน</FormLabel>
-        <FormControl>
-          <Input type="text" class="min-h-11" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-    <FormField v-slot="{ componentField }" name="description">
-      <FormItem>
-        <FormLabel>คำอธิบายร้าน</FormLabel>
-        <FormControl>
-          <Textarea rows="4" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+    <div class="grid content-start gap-4">
+      <FormField v-slot="{ componentField }" name="name">
+        <FormItem>
+          <FormLabel>ชื่อร้าน</FormLabel>
+          <FormControl>
+            <Input type="text" class="min-h-11" v-bind="componentField" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+      <FormField v-slot="{ componentField }" name="description">
+        <FormItem>
+          <FormLabel>คำอธิบายร้าน</FormLabel>
+          <FormControl>
+            <Textarea rows="4" class="min-h-32" v-bind="componentField" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+    </div>
     <ImageUploadField
       v-model="image"
       label="รูปร้าน"
       ratio="16/9"
+      preview-class="max-w-56 lg:max-w-none"
       :current-url="initial?.imageUrl"
       :error="imageError"
       @invalid="(message) => (imageError = message)"
     />
-    <p v-if="formError" role="alert" class="text-sm text-destructive">{{ formError }}</p>
-    <div class="flex flex-wrap gap-3">
+    <p v-if="formError" role="alert" class="text-sm text-destructive lg:col-span-2">
+      {{ formError }}
+    </p>
+    <div class="flex flex-wrap gap-3 border-t border-border pt-5 lg:col-span-2">
       <Button type="submit" class="min-h-11" :disabled="submitting">
         {{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}
       </Button>

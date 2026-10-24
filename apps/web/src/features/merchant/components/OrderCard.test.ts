@@ -17,9 +17,9 @@ function pill(now: number) {
 
 test('emits toggleItem with the new value', async () => {
   const wrapper = mount(OrderCard, {
-    props: { order: makeShopOrder({ id: 42 }), variant: 'waiting', now: NOW },
+    props: { order: makeShopOrder({ id: 42, queueNumber: 7 }), variant: 'waiting', now: NOW },
   })
-  expect(wrapper.text()).toContain('#42')
+  expect(wrapper.text()).toContain('#7')
   expect(wrapper.text()).toContain('สมชาย · 081-234-5678')
   await wrapper.get('[role="checkbox"]').trigger('click')
   expect(wrapper.emitted('toggleItem')).toEqual([[1, true]])
