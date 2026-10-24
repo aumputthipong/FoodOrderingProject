@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, max } from 'drizzle-orm'
 import type { OrderStatus } from '@canteen/shared'
 import { db, type DbClient } from '../../db/client'
 import { orderItems, orders, products, shops, users } from '../../db/schema'
@@ -6,6 +6,7 @@ import { orderItems, orders, products, shops, users } from '../../db/schema'
 /** An order with its shop and customer, as needed to build `Order` / `ShopOrder`. */
 export type OrderRow = {
   id: number
+  queueNumber: number
   status: OrderStatus
   createdAt: Date
   finishedAt: Date | null
@@ -28,11 +29,17 @@ export type OrderItemRow = {
   isDone: boolean
 }
 
-export type NewOrderValues = { customerId: number; shopId: number }
+export type NewOrderValues = {
+  customerId: number
+  shopId: number
+  queueDate: string
+  queueNumber: number
+}
 export type NewOrderItemValues = { productId: number; quantity: number; unitPrice: number }
 
 const orderColumns = {
   id: orders.id,
+  queueNumber: orders.queueNumber,
   status: orders.status,
   createdAt: orders.createdAt,
   finishedAt: orders.finishedAt,
@@ -65,6 +72,25 @@ function selectOrders(client: DbClient) {
 export async function insertOrder(values: NewOrderValues, client: DbClient = db): Promise<number> {
   const [result] = await client.insert(orders).values(values)
   return result.insertId
+}
+
+/**
+ * The next queue number of the shop on `queueDate`. Locks the shop row first so concurrent
+ * checkouts at the same shop take numbers one after another; the max is a locking (current)
+ * read so it sees orders committed after this transaction's snapshot. Call inside a transaction.
+ */
+export async function nextQueueNumber(
+  shopId: number,
+  queueDate: string,
+  client: DbClient = db,
+): Promise<number> {
+  await client.select({ id: shops.id }).from(shops).where(eq(shops.id, shopId)).for('update')
+  const [row] = await client
+    .select({ last: max(orders.queueNumber) })
+    .from(orders)
+    .where(and(eq(orders.shopId, shopId), eq(orders.queueDate, queueDate)))
+    .for('update')
+  return (row?.last ?? 0) + 1
 }
 
 export async function insertItems(
