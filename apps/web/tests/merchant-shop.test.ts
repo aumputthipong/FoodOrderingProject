@@ -330,6 +330,13 @@ test('sold-out menu row shows หมดชั่วคราว and the switch l
   expect(open!.text()).not.toContain('หมดชั่วคราว')
   expect(soldOut!.text()).toContain('หมดชั่วคราว')
   expect(soldOut!.text()).not.toContain('เปิดขาย')
+  expect(
+    soldOut!.get('[data-testid="image-fallback"], img').element.closest('.grayscale'),
+  ).not.toBeNull()
+  expect(open!.find('.grayscale').exists()).toBe(false)
+  expect(soldOut!.get('span.truncate').classes()).toContain('text-muted-foreground')
+  expect(open!.get('span.truncate').classes()).not.toContain('text-muted-foreground')
+  expect(soldOut!.classes()).toContain('flex-wrap')
   expect(soldOut!.get('[role="switch"]').attributes('aria-label')).toBe('เปิดขาย น้ำเปล่า')
   const switchEl = soldOut!.get('[role="switch"]')
   await switchEl.trigger('click')
@@ -349,7 +356,7 @@ test('product form cancel returns to the menu', async () => {
   wrapper.unmount()
 })
 
-test('shop edit cancel returns to the queue and create shop has no cancel', async () => {
+test('shop edit cancel returns to the queue', async () => {
   serveShop()
   const edit = await mountApp({ path: '/merchant/shop', user: merchant() })
   await vi.waitFor(() =>
@@ -367,5 +374,17 @@ test('menu empty state offers the first-menu description', async () => {
   serveShop(makeShopDetail({ products: [] }))
   const { wrapper } = await mountApp({ path: '/merchant/menu', user: merchant() })
   await vi.waitFor(() => expect(wrapper.text()).toContain('เพิ่มเมนูแรกของร้านได้เลย'))
+  wrapper.unmount()
+})
+
+test('create shop has neither cancel nor back link', async () => {
+  const { wrapper, router } = await mountApp({
+    path: '/merchant/queue',
+    user: makeUser({ id: 2, role: 'merchant', shopId: null }),
+  })
+  expect(router.currentRoute.value.name).toBe('merchant-shop-new')
+  const links = wrapper.findAll('a').map((a) => a.text())
+  expect(links).not.toContain('ยกเลิก')
+  expect(links).not.toContain('กลับ')
   wrapper.unmount()
 })

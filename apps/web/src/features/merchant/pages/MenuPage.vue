@@ -57,7 +57,7 @@ function toggle(productId: number, open: boolean) {
       <li
         v-for="product in shop.products"
         :key="product.id"
-        class="flex items-center gap-3 rounded-card border border-border bg-card p-3"
+        class="flex flex-wrap items-center gap-3 rounded-card border border-border bg-card p-3"
       >
         <div class="size-16 shrink-0 overflow-hidden rounded-thumb">
           <ImageWithFallback
@@ -67,7 +67,7 @@ function toggle(productId: number, open: boolean) {
             :class="product.status === 'available' ? undefined : 'grayscale'"
           />
         </div>
-        <div class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <div class="flex min-w-0 flex-1 basis-40 flex-col items-start gap-0.5">
           <span
             :class="
               cn(
@@ -93,7 +93,7 @@ function toggle(productId: number, open: boolean) {
         </div>
         <RouterLink
           :to="{ name: 'merchant-menu-edit', params: { id: product.id } }"
-          :class="cn(buttonVariants({ variant: 'outline' }), 'min-h-11 gap-1.5')"
+          :class="cn(buttonVariants({ variant: 'outline' }), 'ml-auto min-h-11 gap-1.5')"
           ><Pencil class="size-4" aria-hidden="true" />แก้ไข</RouterLink
         >
       </li>
