@@ -17,6 +17,21 @@
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home-mobile.jpg" width="240" alt="หน้าแรก: รายการร้านในโรงอาหาร" /><br/>หน้าแรก</td>
+    <td align="center"><img src="docs/screenshots/shop-mobile.jpg" width="240" alt="หน้าร้านพร้อมเมนู" /><br/>หน้าร้าน + เมนู</td>
+    <td align="center"><img src="docs/screenshots/queue-mobile.jpg" width="240" alt="บัตรคิวของลูกค้าพร้อมความคืบหน้า" /><br/>บัตรคิวของฉัน</td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center"><img src="docs/screenshots/merchant-queue-desktop.jpg" width="760" alt="หน้าจัดการคิวของแม่ค้าบนจอคอม" /><br/>หน้าจัดการคิวของแม่ค้า (คอม/แท็บเล็ต)</td>
+  </tr>
+</table>
+
+---
+
 ## ลองใช้งาน
 
 ยังไม่มี live demo ตอนนี้รันในเครื่องได้ด้วยคำสั่งเดียว (ต้องมี Docker):
