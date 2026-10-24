@@ -24,7 +24,7 @@ const route = useRoute()
     <div class="flex items-center gap-2.5 rounded-xl bg-background p-2.5">
       <ImageWithFallback
         :src="shopImageUrl"
-        :alt="shopName ?? ''"
+        alt=""
         ratio="1/1"
         class="size-10 shrink-0 rounded-thumb"
       />

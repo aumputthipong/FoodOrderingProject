@@ -22,20 +22,18 @@ const isEmpty = computed(
   () => !!data.value && !data.value.waiting.length && !data.value.finished.length,
 )
 
-function complete(id: number): void {
-  setStatus.mutate(
-    { id, status: 'finished' },
-    {
-      onSuccess: () => {
-        toast.success(`คิว #${id} เสร็จแล้ว`, {
-          action: {
-            label: 'ย้อนกลับ',
-            onClick: () => setStatus.mutate({ id, status: 'waiting' }),
-          },
-        })
-      },
+async function complete(id: number): Promise<void> {
+  try {
+    await setStatus.mutateAsync({ id, status: 'finished' })
+  } catch {
+    return // the mutation-level onError already showed the error toast
+  }
+  toast.success(`คิว #${id} เสร็จแล้ว`, {
+    action: {
+      label: 'ย้อนกลับ',
+      onClick: () => setStatus.mutate({ id, status: 'waiting' }),
     },
-  )
+  })
 }
 
 function busy(orderId: number): boolean {

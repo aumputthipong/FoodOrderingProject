@@ -301,28 +301,74 @@ test('undo failure shows an error toast and leaves buttons usable (Review Focus 
   const success = vi.spyOn(toast, 'success').mockImplementation(() => '')
   const toastError = vi.spyOn(toast, 'error').mockImplementation(() => '')
   const calls: string[] = []
+  let finished = false
   server.use(
     http.get('*/api/shops/mine/orders', () =>
-      HttpResponse.json({ waiting: [order()], finished: [] }),
+      HttpResponse.json(
+        finished
+          ? {
+              waiting: [],
+              finished: [order({ status: 'finished', finishedAt: '2026-01-01T03:30:00.000Z' })],
+            }
+          : { waiting: [order()], finished: [] },
+      ),
     ),
     http.patch('*/api/orders/:id/status', async ({ request }) => {
       const { status } = (await request.json()) as { status: string }
       calls.push(status)
-      return status === 'waiting'
-        ? HttpResponse.json({ message: 'boom' }, { status: 500 })
-        : HttpResponse.json(order())
+      if (status === 'waiting') return HttpResponse.json({ message: 'boom' }, { status: 500 })
+      finished = true
+      return HttpResponse.json(order())
     }),
   )
   const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
   await vi.waitFor(() => expect(wrapper.text()).toContain('#42'))
   await findButton(wrapper, 'เสร็จทั้งออเดอร์').trigger('click')
   await vi.waitFor(() => expect(success).toHaveBeenCalled())
+  await vi.waitFor(() =>
+    expect(wrapper.find('aside[aria-label="เสร็จแล้ว"]').text()).toContain('#42'),
+  )
   const options = success.mock.calls[0]![1] as { action: { onClick: () => void } }
   options.action.onClick()
   await vi.waitFor(() => expect(toastError).toHaveBeenCalled())
   await flushPromises()
   expect(calls).toEqual(['finished', 'waiting'])
-  expect(findButton(wrapper, 'เสร็จทั้งออเดอร์').attributes('disabled')).toBeUndefined()
+  const reopen = wrapper.get('aside[aria-label="เสร็จแล้ว"]').find('button')
+  expect(reopen.text()).toBe('ย้อนกลับ')
+  expect(reopen.attributes('disabled')).toBeUndefined()
+  wrapper.unmount()
+})
+
+test('overlapping completions each keep their own undo toast', async () => {
+  const success = vi.spyOn(toast, 'success').mockImplementation(() => '')
+  let release: () => void = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  server.use(
+    http.get('*/api/shops/mine/orders', () =>
+      HttpResponse.json({
+        waiting: [order({ id: 42 }), order({ id: 43 })],
+        finished: [],
+      }),
+    ),
+    http.patch('*/api/orders/:id/status', async () => {
+      await gate
+      return HttpResponse.json(order())
+    }),
+  )
+  const { wrapper } = await mountApp({ path: '/merchant/queue', user: merchant() })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('#43'))
+  const buttons = wrapper.findAll('button').filter((b) => b.text().includes('เสร็จทั้งออเดอร์'))
+  expect(buttons).toHaveLength(2)
+  await buttons[0]!.trigger('click')
+  await buttons[1]!.trigger('click')
+  release()
+  await vi.waitFor(() => expect(success).toHaveBeenCalledTimes(2))
+  expect(success.mock.calls.map((c) => c[0]).sort()).toEqual([
+    'คิว #42 เสร็จแล้ว',
+    'คิว #43 เสร็จแล้ว',
+  ])
   wrapper.unmount()
 })
 
